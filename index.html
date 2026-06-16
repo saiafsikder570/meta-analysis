@@ -23,13 +23,14 @@
         .profit { color: var(--green); }
         .loss { color: var(--red); }
         .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .res-split { font-size: 10px; line-height: 1.2; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer <small style="font-size: 10px; color: var(--orange);">v5.0 - Accuracy Fixed</small></h2>
+            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer <small style="font-size: 10px; color: var(--orange);">v5.1 - MSG/Sales Split</small></h2>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
@@ -83,7 +84,10 @@
                     <td id="tot-clicks">0</td>
                     <td id="avg-ctr">0.00%</td>
                     <td id="tot-lpv">0</td>
-                    <td id="tot-res" style="color:var(--orange)">0</td>
+                    <td id="tot-res" style="color:var(--orange)">
+                        <div class="res-split" id="split-sales">🛒 Purchases: 0</div>
+                        <div class="res-split" id="split-msgs">💬 Messages: 0</div>
+                    </td>
                     <td id="tot-spend">$0.00</td>
                     <td id="avg-cpr">$0.00</td>
                     <td id="avg-roas">0.00</td>
@@ -135,15 +139,15 @@
             adData.forEach((row, i) => {
                 const c_name = row[findCol(row, ['campaign name', 'campaign'])] || "N/A";
                 const c_spend = row[findCol(row, ['amount spent', 'spend'])] || 0;
-                const c_res = row[findCol(row, ['results', 'purchase', 'website purchases'])] || 0;
+                const c_res = row[findCol(row, ['results', 'purchase', 'website purchases', 'messaging conversations started'])] || 0;
 
                 const spend = cleanNum(c_spend);
                 const results = cleanNum(c_res);
 
                 if (!c_name || (spend === 0 && results === 0)) return;
 
-                // টাইপ ডিটেকশন
-                let isMessage = c_name.toLowerCase().includes('msg') || c_name.toLowerCase().includes('message');
+                // Auto detection based on name
+                let isMessage = c_name.toLowerCase().includes('msg') || c_name.toLowerCase().includes('message') || c_name.toLowerCase().includes('chat');
                 let defaultOrders = isMessage ? 0 : results;
 
                 const tr = document.createElement('tr');
@@ -151,7 +155,7 @@
                     <td style="color:#8b949e">${i+1}</td>
                     <td style="color:#fff; font-weight:bold">${c_name}</td>
                     <td>
-                        <select onchange="handleTypeChange(this, ${results})">
+                        <select class="type-select" onchange="handleTypeChange(this, ${results})">
                             <option value="SALE" ${!isMessage ? 'selected' : ''}>SALE</option>
                             <option value="MSG" ${isMessage ? 'selected' : ''}>MSG</option>
                         </select>
@@ -164,7 +168,7 @@
                     <td class="cell-clicks">${cleanNum(row[findCol(row, ['link clicks', 'clicks'])])}</td>
                     <td class="cell-ctr">${cleanNum(row[findCol(row, ['ctr'])])}</td>
                     <td class="cell-lpv">${cleanNum(row[findCol(row, ['landing page', 'lpv'])])}</td>
-                    <td class="cell-res">${results} ${isMessage ? '💬' : '🛒'}</td>
+                    <td class="cell-res" data-val="${results}">${results} ${isMessage ? '💬' : '🛒'}</td>
                     <td class="row-spend">$${spend.toFixed(2)}</td>
                     <td class="cell-cpr">${cleanNum(row[findCol(row, ['cost per result', 'cpr'])])}</td>
                     <td class="cell-roas">${cleanNum(row[findCol(row, ['roas'])])}</td>
@@ -181,6 +185,12 @@
         function handleTypeChange(select, originalResults) {
             const row = select.parentElement.parentElement;
             const orderInput = row.querySelector('.m-orders');
+            const resCell = row.querySelector('.cell-res');
+            
+            // Update Icon
+            resCell.innerHTML = `${originalResults} ${select.value === "MSG" ? '💬' : '🛒'}`;
+            
+            // Set default orders (Sales = result count, MSG = 0)
             orderInput.value = (select.value === "MSG") ? 0 : originalResults;
             orderInput.style.borderColor = (select.value === "MSG") ? "var(--orange)" : "transparent";
             updateAll();
@@ -188,7 +198,8 @@
 
         function updateAll() {
             const rate = parseFloat(document.getElementById('exRate').value) || 0;
-            let tReach = 0, tImp = 0, tClicks = 0, tLPV = 0, tRes = 0, tSpendUSD = 0, tOrders = 0, tRevBDT = 0, tProfitBDT = 0;
+            let tReach = 0, tImp = 0, tClicks = 0, tLPV = 0, tSpendUSD = 0, tOrders = 0, tRevBDT = 0, tProfitBDT = 0;
+            let totalPurchases = 0, totalMessages = 0;
             
             const rows = document.querySelectorAll('#tableBody tr');
 
@@ -197,7 +208,8 @@
                 const imp = parseFloat(tr.querySelector('.cell-imp').innerText) || 0;
                 const clicks = parseFloat(tr.querySelector('.cell-clicks').innerText) || 0;
                 const lpv = parseFloat(tr.querySelector('.cell-lpv').innerText) || 0;
-                const res = parseFloat(tr.querySelector('.cell-res').innerText) || 0;
+                const resValue = parseFloat(tr.querySelector('.cell-res').getAttribute('data-val')) || 0;
+                const type = tr.querySelector('.type-select').value;
                 const spendUSD = parseFloat(tr.querySelector('.row-spend').innerText.replace('$', '')) || 0;
                 
                 const cost = parseFloat(tr.querySelector('.m-cost').value) || 0;
@@ -211,8 +223,12 @@
                 tr.querySelector('.row-profit').className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
 
                 tReach += reach; tImp += imp; tClicks += clicks; tLPV += lpv; 
-                tRes += res; tSpendUSD += spendUSD; tOrders += orders; 
+                tSpendUSD += spendUSD; tOrders += orders; 
                 tRevBDT += revenue; tProfitBDT += profit;
+
+                // Split result counts based on campaign type
+                if (type === "SALE") totalPurchases += resValue;
+                else totalMessages += resValue;
             });
 
             // Update Footer (Summary)
@@ -223,11 +239,14 @@
             document.getElementById('tot-clicks').innerText = tClicks.toLocaleString();
             document.getElementById('avg-ctr').innerText = (tImp > 0 ? ((tClicks / tImp) * 100).toFixed(2) : '0.00') + '%';
             document.getElementById('tot-lpv').innerText = tLPV.toLocaleString();
-            document.getElementById('tot-res').innerText = tRes.toLocaleString(); // This shows raw FB results
+            
+            // Specific split summary
+            document.getElementById('split-sales').innerText = `🛒 Purchases: ${totalPurchases}`;
+            document.getElementById('split-msgs').innerText = `💬 Messages: ${totalMessages}`;
+
             document.getElementById('tot-spend').innerText = '$' + tSpendUSD.toFixed(2);
-            document.getElementById('avg-cpr').innerText = (tRes > 0 ? '$' + (tSpendUSD / tRes).toFixed(2) : '$0.00');
             document.getElementById('avg-roas').innerText = (tSpendUSD > 0 ? (tRevBDT / (tSpendUSD * rate)).toFixed(2) : '0.00');
-            document.getElementById('tot-orders').innerText = tOrders.toLocaleString(); // This shows only confirmed orders
+            document.getElementById('tot-orders').innerText = tOrders.toLocaleString(); 
             document.getElementById('tot-profit').innerText = '৳' + Math.round(tProfitBDT).toLocaleString();
             document.getElementById('tot-profit').className = tProfitBDT >= 0 ? 'profit' : 'loss';
 
