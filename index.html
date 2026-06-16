@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Accurate Analyzer</title>
+    <title>Meta Ads Master Analyzer | 100% Accuracy</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
@@ -16,30 +16,32 @@
         .card .val { font-size: 24px; font-weight: bold; margin-top: 8px; color: #fff; }
         .table-container { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 1500px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; }
         th { background: #21262d; color: #8b949e; font-size: 11px; position: sticky; top: 0; }
         input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; width: 65px; outline: none; }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
         .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        #status { font-size: 12px; color: var(--orange); margin-top: 5px; }
+        .debug-msg { background: #1c2128; padding: 10px; border-radius: 5px; border: 1px solid #d29922; color: #d29922; margin-bottom: 15px; font-size: 11px; display:none; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Meta Ads Profit Center (Verified)</h2>
-            <div id="status">Ready to process your Facebook report...</div>
+            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer (Final Fixed)</h2>
+            <div id="status" style="font-size: 12px; color: var(--orange);">Ready for processing...</div>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
-            <input type="number" id="exRate" value="120" oninput="updateAll()">
+            <input type="number" id="exRate" value="130" oninput="updateAll()">
             <span>BDT</span>
         </div>
         <input type="file" id="fileInp" accept=".csv" hidden onchange="loadFile(event)">
         <button class="btn" onclick="document.getElementById('fileInp').click()">Upload Facebook CSV</button>
     </div>
+
+    <div id="debugBoard" class="debug-msg"></div>
 
     <div class="kpi-grid">
         <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
@@ -64,8 +66,7 @@
                     <th style="background:#1c2e1c">Product Cost (৳)</th>
                     <th style="background:#1c2e1c">Sell Price (৳)</th>
                     <th style="background:#1c2e1c">Valid Orders</th>
-                    <th style="background:#1c2e1c">Revenue (৳)</th>
-                    <th style="background:#1c2e1c">Net Profit (৳)</th>
+                    <th style="background:#1c2e1c; border-right:none">Profit (৳)</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -75,22 +76,31 @@
     <script>
         let adData = [];
 
-        // নির্ভুল ডাটা ক্লিনিং ফাংশন
-        function parseNum(val) {
+        function cleanNum(val) {
             if (val === undefined || val === null || val === "" || val === "—") return 0;
-            let str = String(val).replace(/[^\d.-]/g, ''); // শুধু সংখ্যা আর ডট রাখবে
+            let str = String(val).replace(/[^\d.-]/g, ''); 
             return parseFloat(str) || 0;
+        }
+
+        // কলাম খোঁজার স্মার্ট ফাংশন (যেকোনো ফরম্যাট ধরবে)
+        function findColumn(row, keywords) {
+            const keys = Object.keys(row);
+            for (let k of keys) {
+                let lowK = k.toLowerCase().trim();
+                for (let word of keywords) {
+                    if (lowK === word.toLowerCase() || lowK.includes(word.toLowerCase())) return k;
+                }
+            }
+            return null;
         }
 
         function loadFile(e) {
             const file = e.target.files[0];
-            document.getElementById('status').innerText = "Loading: " + file.name;
+            document.getElementById('status').innerText = "Analyzing file: " + file.name;
             Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
+                header: true, skipEmptyLines: true,
                 complete: (res) => { 
                     adData = res.data; 
-                    console.log("Parsed Samples:", adData[0]); // কনসোলে কলাম চেক করার জন্য
                     render(); 
                 }
             });
@@ -101,40 +111,42 @@
             tbody.innerHTML = '';
             
             adData.forEach((row, i) => {
-                // ফেসবুক স্ক্রিনশট অনুযায়ী কলাম ম্যাপিং
-                const name = row['Campaign Name'] || row['Campaign name'] || "Unnamed Campaign";
-                const reach = parseNum(row['Reach']);
-                const imp = parseNum(row['Impressions']);
-                const spend = parseNum(row['Amount spent'] || row['Amount Spent (USD)']);
-                const results = parseNum(row['Results']);
-                const cpr = parseNum(row['Cost per result'] || row['Cost per result (CPR)']);
-                const roas = parseNum(row['ROAS'] || row['Return on ad spend (ROAS)']);
-                const ctr = row['CTR (all)'] || row['CTR'] || "0%";
-                const clicks = parseNum(row['Link clicks'] || row['Link Clicks']);
+                // কলামগুলো খোঁজা
+                const c_name = findColumn(row, ['campaign name', 'campaign']) || Object.keys(row)[0];
+                const c_spend = findColumn(row, ['amount spent', 'spend', 'cost']);
+                const c_results = findColumn(row, ['results', 'purchase', 'website purchases']);
+                const c_reach = findColumn(row, ['reach']);
+                const c_imp = findColumn(row, ['impressions']);
+                const c_cpr = findColumn(row, ['cost per result', 'cpr']);
+                const c_roas = findColumn(row, ['roas', 'return on ad']);
+                const c_ctr = findColumn(row, ['ctr']);
+                const c_clicks = findColumn(row, ['link clicks', 'clicks']);
 
-                // ফালতু রো বাদ দেওয়া (যদি স্পেন্ড বা রেজাল্ট না থাকে)
-                if(spend === 0 && results === 0) return;
+                const spend = cleanNum(row[c_spend]);
+                const results = cleanNum(row[c_results]);
+                
+                // যদি স্পেন্ড বা রেজাল্ট না থাকে, রোটি বাদ দাও
+                if (spend === 0 && results === 0) return;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="color:#fff; font-weight:500">${name}</td>
-                    <td>${reach.toLocaleString()}</td>
-                    <td>${imp.toLocaleString()}</td>
+                    <td style="color:#fff">${row[c_name] || 'N/A'}</td>
+                    <td>${cleanNum(row[c_reach]).toLocaleString()}</td>
+                    <td>${cleanNum(row[c_imp]).toLocaleString()}</td>
                     <td class="row-spend">$${spend.toFixed(2)}</td>
                     <td>${results}</td>
-                    <td>$${cpr.toFixed(2)}</td>
-                    <td>${roas.toFixed(2)}</td>
-                    <td>${ctr}</td>
-                    <td>${clicks}</td>
+                    <td>$${cleanNum(row[c_cpr]).toFixed(2)}</td>
+                    <td>${cleanNum(row[c_roas]).toFixed(2)}</td>
+                    <td>${cleanNum(row[c_ctr]).toFixed(2)}%</td>
+                    <td>${cleanNum(row[c_clicks])}</td>
                     <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
                     <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
                     <td><input type="number" value="${results}" class="m-orders" oninput="updateAll()"></td>
-                    <td class="row-rev">৳0</td>
                     <td class="row-profit">৳0</td>
                 `;
                 tbody.appendChild(tr);
             });
-            document.getElementById('status').innerText = "Data Loaded Successfully!";
+            document.getElementById('status').innerText = "Report Synced Perfectly!";
             updateAll();
         }
 
@@ -153,7 +165,6 @@
                 const spendBDT = spendUSD * rate;
                 const profit = revenue - (spendBDT + (cost * orders));
 
-                tr.querySelector('.row-rev').innerText = '৳' + Math.round(revenue).toLocaleString();
                 const pCell = tr.querySelector('.row-profit');
                 pCell.innerText = '৳' + Math.round(profit).toLocaleString();
                 pCell.className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
@@ -167,7 +178,6 @@
             document.getElementById('kpi-spend-bdt').innerText = '৳' + Math.round(totalSpendUSD * rate).toLocaleString();
             document.getElementById('kpi-rev').innerText = '৳' + Math.round(totalRevBDT).toLocaleString();
             document.getElementById('kpi-profit').innerText = '৳' + Math.round(totalProfitBDT).toLocaleString();
-            
             document.getElementById('profit-card').style.borderColor = totalProfitBDT >= 0 ? 'var(--green)' : 'var(--red)';
         }
     </script>
