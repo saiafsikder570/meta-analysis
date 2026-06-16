@@ -3,58 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robust Ads & Profit Analyzer</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Meta Ads Pro Analyzer (USD to BDT)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root { --bg: #090b10; --card: #12151c; --border: #21262d; --text: #ffffff; --muted: #8b949e; --blue: #2f80ed; --green: #27ae60; }
-        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
-        .header { display: flex; gap: 10px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); border-bottom: 4px solid var(--blue); text-align: center; }
-        .card h3 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; }
-        .card .val { font-size: 26px; font-weight: bold; margin-top: 10px; }
-        .table-box { background: var(--card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
-        th { color: var(--muted); background: #1c2128; }
-        input[type="number"] { background: #0d1117; border: 1px solid var(--border); color: white; padding: 5px; border-radius: 4px; width: 70px; }
-        .btn { background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        :root { --bg: #090b10; --card: #12151c; --border: #21262d; --text: #ffffff; --muted: #8b949e; --blue: #2f80ed; --green: #27ae60; --orange: #f2994a; --red: #eb5757; }
+        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; font-size: 13px; }
+        .header { display: flex; gap: 15px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
+        .setting-box { display: flex; align-items: center; gap: 10px; background: #1c2128; padding: 8px 15px; border-radius: 5px; border: 1px solid var(--border); }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); border-bottom: 3px solid var(--blue); }
+        .card h3 { margin: 0; font-size: 11px; color: var(--muted); text-transform: uppercase; }
+        .card .val { font-size: 22px; font-weight: bold; margin-top: 8px; }
+        .table-container { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1500px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px solid #1c2128; }
+        th { background: #1c2128; color: var(--muted); font-size: 11px; position: sticky; top: 0; }
+        input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; width: 60px; outline: none; }
         .profit { color: var(--green); font-weight: bold; }
-        .loss { color: #eb5757; font-weight: bold; }
-        #status { color: var(--orange); font-size: 12px; margin-top: 5px; }
+        .loss { color: var(--red); font-weight: bold; }
+        .btn { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div style="flex:1">
-            <h2 style="margin:0">Facebook Ads Profit Analyzer</h2>
-            <div id="status">Waiting for CSV file...</div>
+        <h2 style="margin:0; flex:1">Facebook Ads Profit Center</h2>
+        
+        <div class="setting-box">
+            <span>$1 = </span>
+            <input type="number" id="exRate" value="120" style="width: 50px;" oninput="updateAll()">
+            <span>BDT</span>
         </div>
-        <input type="file" id="fileInp" accept=".csv" onchange="loadFile(event)">
-        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload Facebook CSV</button>
+
+        <input type="file" id="fileInp" accept=".csv" hidden onchange="loadFile(event)">
+        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload CSV</button>
     </div>
 
     <div class="kpi-grid">
-        <div class="card"><h3>Total Spend</h3><div class="val" id="totalSpend">$0</div></div>
-        <div class="card" style="border-color: var(--green);"><h3>Total Revenue</h3><div class="val" id="totalRev">$0</div></div>
-        <div class="card" style="border-color: #f2994a;"><h3>Net Profit</h3><div class="val" id="totalProfit">$0</div></div>
-        <div class="card"><h3>ROAS</h3><div class="val" id="totalRoas">0.0</div></div>
+        <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0</div></div>
+        <div class="card" style="border-color: var(--orange);"><h3>Total Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
+        <div class="card" style="border-color: var(--green);"><h3>Total Revenue (BDT)</h3><div class="val" id="kpi-rev">৳0</div></div>
+        <div class="card" id="kpi-profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
+        <div class="card" style="border-color: var(--purple);"><h3>Avg. ROAS</h3><div class="val" id="kpi-roas">0.0</div></div>
     </div>
 
-    <div class="table-box">
-        <table id="adTable">
+    <div class="table-container">
+        <table>
             <thead>
-                <tr id="tableHead">
+                <tr>
                     <th>Campaign</th>
-                    <th>Spend</th>
+                    <th>Budget</th>
+                    <th>Reach</th>
+                    <th>Imp.</th>
+                    <th>CPM</th>
+                    <th>Clicks</th>
+                    <th>CTR %</th>
+                    <th>LPV</th>
                     <th>Purchases</th>
-                    <th>Product Cost ($)</th>
-                    <th>Selling Price ($)</th>
-                    <th>Orders (Adj)</th>
-                    <th>Revenue</th>
-                    <th>Profit</th>
+                    <th>Spend ($)</th>
+                    <th>CPR ($)</th>
+                    <th>ROAS</th>
+                    <th style="background:#1c2e1c">Cost/Item (৳)</th>
+                    <th style="background:#1c2e1c">Sell/Item (৳)</th>
+                    <th style="background:#1c2e1c">Orders</th>
+                    <th style="background:#1c2e1c">Revenue (৳)</th>
+                    <th style="background:#1c2e1c; border-right:none">Profit (৳)</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -64,88 +77,83 @@
     <script>
         let adData = [];
 
-        function cleanNum(val) {
+        function clean(val) {
             if (!val) return 0;
-            // $ চিহ্ন বা কমা সরিয়ে শুধু সংখ্যা রাখা
             return parseFloat(String(val).replace(/[^0-9.-]+/g, "")) || 0;
         }
 
-        function loadFile(event) {
-            const file = event.target.files[0];
-            document.getElementById('status').innerText = "Loading: " + file.name;
-            
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    console.log("Parsed Data:", results.data); // ব্রাউজার কনসোলে ডাটা চেক করার জন্য
-                    adData = results.data;
-                    renderTable();
-                }
+        function loadFile(e) {
+            Papa.parse(e.target.files[0], {
+                header: true, skipEmptyLines: true,
+                complete: (res) => { adData = res.data; render(); }
             });
         }
 
-        function renderTable() {
+        function render() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            adData.forEach((row, index) => {
-                // কলামের নাম যাই হোক না কেন, ডাটা খুঁজে বের করার চেষ্টা
-                const campaign = row.Campaign || row['Campaign name'] || row['Ad Set Name'] || "Unknown";
-                const spend = cleanNum(row['Amount Spent'] || row.Spend || row['Amount spent (USD)']);
-                const purchase = cleanNum(row.PURCHASE || row.Results || row.Purchase || 0);
-
-                if (spend === 0 && purchase === 0) return; // ফালতু রো বাদ দেয়া
+            adData.forEach((row, i) => {
+                const name = row.Campaign || row['Campaign name'] || "N/A";
+                const spend = clean(row['Amount Spent'] || row.Spend || 0);
+                if(spend === 0 && !row.Purchases) return;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${campaign}</td>
+                    <td>${name}</td>
+                    <td>${row.Budget || '-'}</td>
+                    <td>${(row.Reach || 0).toLocaleString()}</td>
+                    <td>${(row.Impressions || 0).toLocaleString()}</td>
+                    <td>$${clean(row.CPM).toFixed(2)}</td>
+                    <td>${row['Link Clicks'] || row.Clicks || 0}</td>
+                    <td>${row['CTR %'] || row.CTR || 0}%</td>
+                    <td>${row['Landing page views (LPV)'] || row.LPV || 0}</td>
+                    <td>${row.PURCHASE || row.Results || 0}</td>
                     <td>$${spend.toFixed(2)}</td>
-                    <td>${purchase}</td>
-                    <td><input type="number" value="10" oninput="calculateProfit(${index}, this.parentElement.parentElement)"></td>
-                    <td><input type="number" value="50" oninput="calculateProfit(${index}, this.parentElement.parentElement)"></td>
-                    <td><input type="number" value="${purchase}" oninput="calculateProfit(${index}, this.parentElement.parentElement)"></td>
-                    <td class="row-rev">$0</td>
-                    <td class="row-profit">$0</td>
+                    <td>$${clean(row['Cost per result (CPR)'] || 0).toFixed(2)}</td>
+                    <td>${clean(row.ROAS).toFixed(2)}</td>
+                    <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
+                    <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
+                    <td><input type="number" value="${clean(row.PURCHASE || row.Results)}" class="m-orders" oninput="updateAll()"></td>
+                    <td class="row-rev">৳0</td>
+                    <td class="row-profit">৳0</td>
                 `;
                 tbody.appendChild(tr);
-                calculateProfit(index, tr, spend);
             });
-            document.getElementById('status').innerText = "Data Loaded Successfully!";
+            updateAll();
         }
 
-        function calculateProfit(index, tr, fixedSpend = null) {
-            const row = adData[index];
-            const spend = fixedSpend !== null ? fixedSpend : cleanNum(row['Amount Spent'] || row.Spend || row['Amount spent (USD)']);
-            
-            const cost = parseFloat(tr.cells[3].querySelector('input').value) || 0;
-            const price = parseFloat(tr.cells[4].querySelector('input').value) || 0;
-            const orders = parseFloat(tr.cells[5].querySelector('input').value) || 0;
-
-            const revenue = price * orders;
-            const profit = revenue - (spend + (cost * orders));
-
-            tr.cells[6].innerText = '$' + revenue.toFixed(2);
-            tr.cells[7].innerText = '$' + profit.toFixed(2);
-            tr.cells[7].className = profit >= 0 ? 'profit' : 'loss';
-
-            updateSummary();
-        }
-
-        function updateSummary() {
-            let tSpend = 0, tRev = 0, tProfit = 0;
+        function updateAll() {
+            const rate = parseFloat(document.getElementById('exRate').value) || 0;
+            let totalSpendUSD = 0, totalRevBDT = 0, totalProfitBDT = 0;
             const rows = document.querySelectorAll('#tableBody tr');
-            
-            rows.forEach(row => {
-                tSpend += parseFloat(row.cells[1].innerText.replace('$', '')) || 0;
-                tRev += parseFloat(row.cells[6].innerText.replace('$', '')) || 0;
-                tProfit += parseFloat(row.cells[7].innerText.replace('$', '')) || 0;
+
+            rows.forEach((tr, i) => {
+                const spendUSD = parseFloat(tr.cells[9].innerText.replace('$', '')) || 0;
+                const cost = parseFloat(tr.querySelector('.m-cost').value) || 0;
+                const price = parseFloat(tr.querySelector('.m-price').value) || 0;
+                const orders = parseFloat(tr.querySelector('.m-orders').value) || 0;
+
+                const revenue = price * orders;
+                const spendBDT = spendUSD * rate;
+                const profit = revenue - (spendBDT + (cost * orders));
+
+                tr.cells[15].innerText = '৳' + revenue.toLocaleString();
+                tr.cells[16].innerText = '৳' + profit.toLocaleString();
+                tr.cells[16].className = profit >= 0 ? 'profit' : 'loss';
+
+                totalSpendUSD += spendUSD;
+                totalRevBDT += revenue;
+                totalProfitBDT += profit;
             });
 
-            document.getElementById('totalSpend').innerText = '$' + tSpend.toLocaleString();
-            document.getElementById('totalRev').innerText = '$' + tRev.toLocaleString();
-            document.getElementById('totalProfit').innerText = '$' + tProfit.toLocaleString();
-            document.getElementById('totalRoas').innerText = tSpend > 0 ? (tRev / tSpend).toFixed(2) : '0.0';
+            document.getElementById('kpi-spend').innerText = '$' + totalSpendUSD.toLocaleString();
+            document.getElementById('kpi-spend-bdt').innerText = '৳' + (totalSpendUSD * rate).toLocaleString();
+            document.getElementById('kpi-rev').innerText = '৳' + totalRevBDT.toLocaleString();
+            document.getElementById('kpi-profit').innerText = '৳' + totalProfitBDT.toLocaleString();
+            document.getElementById('kpi-roas').innerText = totalSpendUSD > 0 ? (totalRevBDT / (totalSpendUSD * rate)).toFixed(2) : '0.0';
+            
+            document.getElementById('kpi-profit-card').style.borderColor = totalProfitBDT >= 0 ? 'var(--green)' : 'var(--red)';
         }
     </script>
 </body>
