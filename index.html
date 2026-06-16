@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Master Pro | Accurate Analysis</title>
+    <title>Meta Ads Master Pro | Grand Total Version</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
@@ -15,22 +15,22 @@
         .card h3 { margin: 0; font-size: 10px; color: #8b949e; text-transform: uppercase; }
         .card .val { font-size: 20px; font-weight: bold; margin-top: 5px; color: #fff; }
         .table-container { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1700px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1800px; }
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; white-space: nowrap; }
-        th { background: #21262d; color: #8b949e; position: sticky; top: 0; }
+        th { background: #21262d; color: #8b949e; position: sticky; top: 0; z-index: 10; }
+        tfoot td { background: #1c2128; font-weight: bold; color: #fff; border-top: 2px solid var(--blue); }
         input, select { background: #0d1117; border: 1px solid var(--border); color: white; padding: 3px; border-radius: 3px; outline: none; font-size: 11px; }
-        .profit { color: var(--green); font-weight: bold; }
-        .loss { color: var(--red); font-weight: bold; }
+        .profit { color: var(--green); }
+        .loss { color: var(--red); }
         .btn { background: var(--blue); color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 600; }
-        .active-row { background: #1c2128; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Meta Ads Accurate Profit Center</h2>
-            <div id="status" style="font-size: 11px; color: var(--orange);">Upload CSV to sync data...</div>
+            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer</h2>
+            <div id="status" style="font-size: 11px; color: var(--orange);">Upload Facebook CSV to start...</div>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
@@ -42,8 +42,8 @@
     </div>
 
     <div class="kpi-grid">
-        <div class="card"><h3>Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
-        <div class="card" style="border-color: var(--orange);"><h3>Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
+        <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
+        <div class="card" style="border-color: var(--orange);"><h3>Total Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
         <div class="card" style="border-color: var(--green);"><h3>Total Revenue (BDT)</h3><div class="val" id="kpi-rev">৳0</div></div>
         <div class="card" id="profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
     </div>
@@ -58,8 +58,8 @@
                     <th>Budget</th>
                     <th>Reach</th>
                     <th>Imp.</th>
-                    <th>Frequency</th>
-                    <th>CPM</th>
+                    <th>Freq.</th>
+                    <th>CPM ($)</th>
                     <th>Clicks</th>
                     <th>CTR %</th>
                     <th>LPV</th>
@@ -74,6 +74,25 @@
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
+            <tfoot>
+                <tr id="totalRow">
+                    <td colspan="4" style="text-align: center;">GRAND TOTAL</td>
+                    <td id="tot-reach">0</td>
+                    <td id="tot-imp">0</td>
+                    <td id="avg-freq">0.00</td>
+                    <td id="avg-cpm">$0.00</td>
+                    <td id="tot-clicks">0</td>
+                    <td id="avg-ctr">0.00%</td>
+                    <td id="tot-lpv">0</td>
+                    <td id="tot-res">0</td>
+                    <td id="tot-spend">$0.00</td>
+                    <td id="avg-cpr">$0.00</td>
+                    <td id="avg-roas">0.00</td>
+                    <td colspan="2" style="background:#0d1117"></td>
+                    <td id="tot-orders" style="color:var(--blue)">0</td>
+                    <td id="tot-profit" style="font-size:14px">৳0</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 
@@ -86,7 +105,6 @@
             return parseFloat(str) || 0;
         }
 
-        // একদম স্পেসিফিক কলাম খোঁজার স্মার্ট লজিক
         function findCol(row, keywords) {
             const keys = Object.keys(row);
             for (let k of keys) {
@@ -95,7 +113,6 @@
                     if (lowK === word.toLowerCase() || lowK === word.toLowerCase() + " (usd)") return k;
                 }
             }
-            // যদি হুবহু না পায় তবে পার্শিয়াল খুঁজবে
             for (let k of keys) {
                 let lowK = k.toLowerCase().trim();
                 for (let word of keywords) {
@@ -108,10 +125,7 @@
         function loadFile(e) {
             Papa.parse(e.target.files[0], {
                 header: true, skipEmptyLines: true,
-                complete: (res) => { 
-                    adData = res.data; 
-                    render(); 
-                }
+                complete: (res) => { adData = res.data; render(); }
             });
         }
 
@@ -119,7 +133,6 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            // সিরিয়াল ধরে ডাটা লুপ করা
             adData.forEach((row, i) => {
                 const c_name = row[findCol(row, ['campaign name', 'campaign'])] || "N/A";
                 const c_spend = row[findCol(row, ['amount spent', 'spend'])] || 0;
@@ -128,7 +141,6 @@
                 const spend = cleanNum(c_spend);
                 const results = cleanNum(c_res);
 
-                // গুরুত্বপূর্ণ: যদি নাম, স্পেন্ড বা রেজাল্ট এর যেকোনো একটি থাকে তবেই দেখাবে
                 if (!c_name || (spend === 0 && results === 0)) return;
 
                 const tr = document.createElement('tr');
@@ -142,17 +154,17 @@
                         </select>
                     </td>
                     <td>${row[findCol(row, ['budget'])] || '—'}</td>
-                    <td>${cleanNum(row[findCol(row, ['reach'])]).toLocaleString()}</td>
-                    <td>${cleanNum(row[findCol(row, ['impressions'])]).toLocaleString()}</td>
-                    <td>${cleanNum(row[findCol(row, ['frequency'])]).toFixed(2)}</td>
-                    <td>$${cleanNum(row[findCol(row, ['cpm'])]).toFixed(2)}</td>
-                    <td>${cleanNum(row[findCol(row, ['link clicks', 'clicks'])])}</td>
-                    <td>${cleanNum(row[findCol(row, ['ctr'])]).toFixed(2)}%</td>
-                    <td>${cleanNum(row[findCol(row, ['landing page', 'lpv'])])}</td>
-                    <td style="color:#fff">${results}</td>
+                    <td class="cell-reach">${cleanNum(row[findCol(row, ['reach'])])}</td>
+                    <td class="cell-imp">${cleanNum(row[findCol(row, ['impressions'])])}</td>
+                    <td class="cell-freq">${cleanNum(row[findCol(row, ['frequency'])])}</td>
+                    <td class="cell-cpm">${cleanNum(row[findCol(row, ['cpm'])])}</td>
+                    <td class="cell-clicks">${cleanNum(row[findCol(row, ['link clicks', 'clicks'])])}</td>
+                    <td class="cell-ctr">${cleanNum(row[findCol(row, ['ctr'])])}</td>
+                    <td class="cell-lpv">${cleanNum(row[findCol(row, ['landing page', 'lpv'])])}</td>
+                    <td class="cell-res" style="color:#fff">${results}</td>
                     <td class="row-spend">$${spend.toFixed(2)}</td>
-                    <td>$${cleanNum(row[findCol(row, ['cost per result', 'cpr'])]).toFixed(2)}</td>
-                    <td>${cleanNum(row[findCol(row, ['roas'])]).toFixed(2)}</td>
+                    <td class="cell-cpr">${cleanNum(row[findCol(row, ['cost per result', 'cpr'])])}</td>
+                    <td class="cell-roas">${cleanNum(row[findCol(row, ['roas'])])}</td>
                     <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
                     <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
                     <td><input type="number" value="${results}" class="m-orders" oninput="updateAll()"></td>
@@ -160,52 +172,67 @@
                 `;
                 tbody.appendChild(tr);
             });
-            document.getElementById('status').innerText = "Sync Complete. Sequence Verified.";
             updateAll();
         }
 
         function handleTypeChange(select, originalResults) {
             const row = select.parentElement.parentElement;
             const orderInput = row.querySelector('.m-orders');
-            if (select.value === "MSG") {
-                orderInput.value = 0; // মেসেজ হলে ম্যানুয়ালি বসাতে হবে
-                orderInput.style.borderColor = "var(--orange)";
-            } else {
-                orderInput.value = originalResults;
-                orderInput.style.borderColor = "var(--border)";
-            }
+            orderInput.value = (select.value === "MSG") ? 0 : originalResults;
             updateAll();
         }
 
         function updateAll() {
             const rate = parseFloat(document.getElementById('exRate').value) || 0;
-            let totalSpendUSD = 0, totalRevBDT = 0, totalProfitBDT = 0;
+            let tReach = 0, tImp = 0, tClicks = 0, tLPV = 0, tRes = 0, tSpendUSD = 0, tOrders = 0, tRevBDT = 0, tProfitBDT = 0;
+            
             const rows = document.querySelectorAll('#tableBody tr');
 
             rows.forEach((tr) => {
+                const reach = parseFloat(tr.querySelector('.cell-reach').innerText) || 0;
+                const imp = parseFloat(tr.querySelector('.cell-imp').innerText) || 0;
+                const clicks = parseFloat(tr.querySelector('.cell-clicks').innerText) || 0;
+                const lpv = parseFloat(tr.querySelector('.cell-lpv').innerText) || 0;
+                const res = parseFloat(tr.querySelector('.cell-res').innerText) || 0;
                 const spendUSD = parseFloat(tr.querySelector('.row-spend').innerText.replace('$', '')) || 0;
+                
                 const cost = parseFloat(tr.querySelector('.m-cost').value) || 0;
                 const price = parseFloat(tr.querySelector('.m-price').value) || 0;
                 const orders = parseFloat(tr.querySelector('.m-orders').value) || 0;
 
                 const revenue = price * orders;
-                const spendBDT = spendUSD * rate;
-                const profit = revenue - (spendBDT + (cost * orders));
+                const profit = revenue - ((spendUSD * rate) + (cost * orders));
 
-                const pCell = tr.querySelector('.row-profit');
-                pCell.innerText = '৳' + Math.round(profit).toLocaleString();
-                pCell.className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
+                tr.querySelector('.row-profit').innerText = '৳' + Math.round(profit).toLocaleString();
+                tr.querySelector('.row-profit').className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
 
-                totalSpendUSD += spendUSD;
-                totalRevBDT += revenue;
-                totalProfitBDT += profit;
+                // Accumulate totals
+                tReach += reach; tImp += imp; tClicks += clicks; tLPV += lpv; 
+                tRes += res; tSpendUSD += spendUSD; tOrders += orders; 
+                tRevBDT += revenue; tProfitBDT += profit;
             });
 
-            document.getElementById('kpi-spend').innerText = '$' + totalSpendUSD.toFixed(2);
-            document.getElementById('kpi-spend-bdt').innerText = '৳' + Math.round(totalSpendUSD * rate).toLocaleString();
-            document.getElementById('kpi-rev').innerText = '৳' + Math.round(totalRevBDT).toLocaleString();
-            document.getElementById('kpi-profit').innerText = '৳' + Math.round(totalProfitBDT).toLocaleString();
-            document.getElementById('profit-card').style.borderColor = totalProfitBDT >= 0 ? 'var(--green)' : 'var(--red)';
+            // Update Footer
+            document.getElementById('tot-reach').innerText = tReach.toLocaleString();
+            document.getElementById('tot-imp').innerText = tImp.toLocaleString();
+            document.getElementById('avg-freq').innerText = (tReach > 0 ? (tImp / tReach).toFixed(2) : '0.00');
+            document.getElementById('avg-cpm').innerText = (tImp > 0 ? '$' + ((tSpendUSD / tImp) * 1000).toFixed(2) : '$0.00');
+            document.getElementById('tot-clicks').innerText = tClicks.toLocaleString();
+            document.getElementById('avg-ctr').innerText = (tImp > 0 ? ((tClicks / tImp) * 100).toFixed(2) : '0.00') + '%';
+            document.getElementById('tot-lpv').innerText = tLPV.toLocaleString();
+            document.getElementById('tot-res').innerText = tRes.toLocaleString();
+            document.getElementById('tot-spend').innerText = '$' + tSpendUSD.toFixed(2);
+            document.getElementById('avg-cpr').innerText = (tRes > 0 ? '$' + (tSpendUSD / tRes).toFixed(2) : '$0.00');
+            document.getElementById('avg-roas').innerText = (tSpendUSD > 0 ? (tRevBDT / (tSpendUSD * rate)).toFixed(2) : '0.00');
+            document.getElementById('tot-orders').innerText = tOrders.toLocaleString();
+            document.getElementById('tot-profit').innerText = '৳' + Math.round(tProfitBDT).toLocaleString();
+            document.getElementById('tot-profit').className = tProfitBDT >= 0 ? 'profit' : 'loss';
+
+            // Update KPI Cards
+            document.getElementById('kpi-spend').innerText = '$' + tSpendUSD.toFixed(2);
+            document.getElementById('kpi-spend-bdt').innerText = '৳' + Math.round(tSpendUSD * rate).toLocaleString();
+            document.getElementById('kpi-rev').innerText = '৳' + Math.round(tRevBDT).toLocaleString();
+            document.getElementById('kpi-profit').innerText = '৳' + Math.round(tProfitBDT).toLocaleString();
         }
     </script>
 </body>
