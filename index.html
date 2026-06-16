@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Master Pro | Grand Total Version</title>
+    <title>Meta Ads Master Pro | Sales vs MSG Accuracy</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
@@ -22,15 +22,14 @@
         input, select { background: #0d1117; border: 1px solid var(--border); color: white; padding: 3px; border-radius: 3px; outline: none; font-size: 11px; }
         .profit { color: var(--green); }
         .loss { color: var(--red); }
-        .btn { background: var(--blue); color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer</h2>
-            <div id="status" style="font-size: 11px; color: var(--orange);">Upload Facebook CSV to start...</div>
+            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer <small style="font-size: 10px; color: var(--orange);">v5.0 - Accuracy Fixed</small></h2>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
@@ -42,8 +41,8 @@
     </div>
 
     <div class="kpi-grid">
-        <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
-        <div class="card" style="border-color: var(--orange);"><h3>Total Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
+        <div class="card"><h3>Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
+        <div class="card" style="border-color: var(--orange);"><h3>Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
         <div class="card" style="border-color: var(--green);"><h3>Total Revenue (BDT)</h3><div class="val" id="kpi-rev">৳0</div></div>
         <div class="card" id="profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
     </div>
@@ -63,7 +62,7 @@
                     <th>Clicks</th>
                     <th>CTR %</th>
                     <th>LPV</th>
-                    <th>Results</th>
+                    <th>FB Results</th>
                     <th>Spend ($)</th>
                     <th>CPR ($)</th>
                     <th>ROAS</th>
@@ -76,7 +75,7 @@
             <tbody id="tableBody"></tbody>
             <tfoot>
                 <tr id="totalRow">
-                    <td colspan="4" style="text-align: center;">GRAND TOTAL</td>
+                    <td colspan="4" style="text-align: center;">GRAND TOTAL SUMMARY</td>
                     <td id="tot-reach">0</td>
                     <td id="tot-imp">0</td>
                     <td id="avg-freq">0.00</td>
@@ -84,12 +83,12 @@
                     <td id="tot-clicks">0</td>
                     <td id="avg-ctr">0.00%</td>
                     <td id="tot-lpv">0</td>
-                    <td id="tot-res">0</td>
+                    <td id="tot-res" style="color:var(--orange)">0</td>
                     <td id="tot-spend">$0.00</td>
                     <td id="avg-cpr">$0.00</td>
                     <td id="avg-roas">0.00</td>
                     <td colspan="2" style="background:#0d1117"></td>
-                    <td id="tot-orders" style="color:var(--blue)">0</td>
+                    <td id="tot-orders" style="color:var(--green); font-size: 14px;">0</td>
                     <td id="tot-profit" style="font-size:14px">৳0</td>
                 </tr>
             </tfoot>
@@ -143,14 +142,18 @@
 
                 if (!c_name || (spend === 0 && results === 0)) return;
 
+                // টাইপ ডিটেকশন
+                let isMessage = c_name.toLowerCase().includes('msg') || c_name.toLowerCase().includes('message');
+                let defaultOrders = isMessage ? 0 : results;
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="color:#8b949e">${i+1}</td>
                     <td style="color:#fff; font-weight:bold">${c_name}</td>
                     <td>
                         <select onchange="handleTypeChange(this, ${results})">
-                            <option value="SALE">SALE</option>
-                            <option value="MSG">MSG</option>
+                            <option value="SALE" ${!isMessage ? 'selected' : ''}>SALE</option>
+                            <option value="MSG" ${isMessage ? 'selected' : ''}>MSG</option>
                         </select>
                     </td>
                     <td>${row[findCol(row, ['budget'])] || '—'}</td>
@@ -161,13 +164,13 @@
                     <td class="cell-clicks">${cleanNum(row[findCol(row, ['link clicks', 'clicks'])])}</td>
                     <td class="cell-ctr">${cleanNum(row[findCol(row, ['ctr'])])}</td>
                     <td class="cell-lpv">${cleanNum(row[findCol(row, ['landing page', 'lpv'])])}</td>
-                    <td class="cell-res" style="color:#fff">${results}</td>
+                    <td class="cell-res">${results} ${isMessage ? '💬' : '🛒'}</td>
                     <td class="row-spend">$${spend.toFixed(2)}</td>
                     <td class="cell-cpr">${cleanNum(row[findCol(row, ['cost per result', 'cpr'])])}</td>
                     <td class="cell-roas">${cleanNum(row[findCol(row, ['roas'])])}</td>
                     <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
                     <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
-                    <td><input type="number" value="${results}" class="m-orders" oninput="updateAll()"></td>
+                    <td><input type="number" value="${defaultOrders}" class="m-orders" style="border:1px solid ${isMessage ? 'var(--orange)' : 'transparent'}" oninput="updateAll()"></td>
                     <td class="row-profit">৳0</td>
                 `;
                 tbody.appendChild(tr);
@@ -179,6 +182,7 @@
             const row = select.parentElement.parentElement;
             const orderInput = row.querySelector('.m-orders');
             orderInput.value = (select.value === "MSG") ? 0 : originalResults;
+            orderInput.style.borderColor = (select.value === "MSG") ? "var(--orange)" : "transparent";
             updateAll();
         }
 
@@ -206,13 +210,12 @@
                 tr.querySelector('.row-profit').innerText = '৳' + Math.round(profit).toLocaleString();
                 tr.querySelector('.row-profit').className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
 
-                // Accumulate totals
                 tReach += reach; tImp += imp; tClicks += clicks; tLPV += lpv; 
                 tRes += res; tSpendUSD += spendUSD; tOrders += orders; 
                 tRevBDT += revenue; tProfitBDT += profit;
             });
 
-            // Update Footer
+            // Update Footer (Summary)
             document.getElementById('tot-reach').innerText = tReach.toLocaleString();
             document.getElementById('tot-imp').innerText = tImp.toLocaleString();
             document.getElementById('avg-freq').innerText = (tReach > 0 ? (tImp / tReach).toFixed(2) : '0.00');
@@ -220,15 +223,15 @@
             document.getElementById('tot-clicks').innerText = tClicks.toLocaleString();
             document.getElementById('avg-ctr').innerText = (tImp > 0 ? ((tClicks / tImp) * 100).toFixed(2) : '0.00') + '%';
             document.getElementById('tot-lpv').innerText = tLPV.toLocaleString();
-            document.getElementById('tot-res').innerText = tRes.toLocaleString();
+            document.getElementById('tot-res').innerText = tRes.toLocaleString(); // This shows raw FB results
             document.getElementById('tot-spend').innerText = '$' + tSpendUSD.toFixed(2);
             document.getElementById('avg-cpr').innerText = (tRes > 0 ? '$' + (tSpendUSD / tRes).toFixed(2) : '$0.00');
             document.getElementById('avg-roas').innerText = (tSpendUSD > 0 ? (tRevBDT / (tSpendUSD * rate)).toFixed(2) : '0.00');
-            document.getElementById('tot-orders').innerText = tOrders.toLocaleString();
+            document.getElementById('tot-orders').innerText = tOrders.toLocaleString(); // This shows only confirmed orders
             document.getElementById('tot-profit').innerText = '৳' + Math.round(tProfitBDT).toLocaleString();
             document.getElementById('tot-profit').className = tProfitBDT >= 0 ? 'profit' : 'loss';
 
-            // Update KPI Cards
+            // Update Top KPI Cards
             document.getElementById('kpi-spend').innerText = '$' + tSpendUSD.toFixed(2);
             document.getElementById('kpi-spend-bdt').innerText = '৳' + Math.round(tSpendUSD * rate).toLocaleString();
             document.getElementById('kpi-rev').innerText = '৳' + Math.round(tRevBDT).toLocaleString();
