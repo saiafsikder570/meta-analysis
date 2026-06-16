@@ -3,34 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Pro Analyzer | Accurate Sales Tracking</title>
+    <title>Meta Ads Ultimate Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
-        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; font-size: 13px; }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; --purple: #bc8cff; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 15px; font-size: 12px; }
         .header { display: flex; gap: 15px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); align-items: center; }
         .setting-box { display: flex; align-items: center; gap: 10px; background: #21262d; padding: 8px 15px; border-radius: 5px; border: 1px solid var(--border); }
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); border-bottom: 3px solid var(--blue); }
         .card h3 { margin: 0; font-size: 11px; color: #8b949e; text-transform: uppercase; }
-        .card .val { font-size: 24px; font-weight: bold; margin-top: 8px; color: #fff; }
+        .card .val { font-size: 22px; font-weight: bold; margin-top: 8px; color: #fff; }
         .table-container { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1600px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; }
-        th { background: #21262d; color: #8b949e; font-size: 11px; position: sticky; top: 0; }
-        input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; width: 65px; outline: none; }
+        table { width: 100%; border-collapse: collapse; min-width: 1800px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; }
+        th { background: #21262d; color: #8b949e; font-size: 10px; position: sticky; top: 0; }
+        input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; width: 60px; outline: none; font-size: 11px; }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
         .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        .tag-msg { background: #d2992222; color: #d29922; padding: 2px 5px; border-radius: 3px; font-size: 10px; border: 1px solid #d29922; }
-        .tag-sale { background: #3fb95022; color: #3fb950; padding: 2px 5px; border-radius: 3px; font-size: 10px; border: 1px solid #3fb950; }
+        .tag-msg { background: #d2992222; color: #d29922; padding: 2px 5px; border-radius: 3px; font-size: 9px; border: 1px solid #d29922; font-weight:bold; }
+        .tag-sale { background: #3fb95022; color: #3fb950; padding: 2px 5px; border-radius: 3px; font-size: 9px; border: 1px solid #3fb950; font-weight:bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Ads Profit Analyzer <small style="font-size: 12px; color: var(--muted);">(Sales vs Messages)</small></h2>
+            <h2 style="margin:0; color: white;">Ads Ultimate Profit Center</h2>
+            <div id="status" style="font-size: 11px; color: var(--orange);">Upload your Facebook CSV report...</div>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
@@ -42,8 +43,8 @@
     </div>
 
     <div class="kpi-grid">
-        <div class="card"><h3>Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
-        <div class="card" style="border-color: var(--orange);"><h3>Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
+        <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
+        <div class="card" style="border-color: var(--orange);"><h3>Total Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
         <div class="card" style="border-color: var(--green);"><h3>Total Revenue (BDT)</h3><div class="val" id="kpi-rev">৳0</div></div>
         <div class="card" id="profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
     </div>
@@ -54,15 +55,23 @@
                 <tr>
                     <th>Campaign Name</th>
                     <th>Type</th>
-                    <th>Spend ($)</th>
-                    <th>Results</th>
-                    <th>ROAS</th>
+                    <th>Budget</th>
+                    <th>Reach</th>
+                    <th>Imp.</th>
+                    <th>Frequency</th>
+                    <th>CPM</th>
+                    <th>Clicks</th>
                     <th>CTR %</th>
-                    <th style="background:#1c2e1c">Cost/Item (৳)</th>
-                    <th style="background:#1c2e1c">Sell Price (৳)</th>
+                    <th>LPV</th>
+                    <th>Results</th>
+                    <th>Spend ($)</th>
+                    <th>CPR ($)</th>
+                    <th>ROAS</th>
+                    <th style="background:#1c2e1c">Cost (৳)</th>
+                    <th style="background:#1c2e1c">Price (৳)</th>
                     <th style="background:#1c2e1c; color:#fff">Valid Orders</th>
                     <th style="background:#1c2e1c">Revenue (৳)</th>
-                    <th style="background:#1c2e1c; border-right:none">Net Profit (৳)</th>
+                    <th style="background:#1c2e1c; border-right:none">Profit (৳)</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -101,32 +110,32 @@
             tbody.innerHTML = '';
             
             adData.forEach((row, i) => {
-                const c_name_col = findColumn(row, ['campaign name', 'campaign']) || Object.keys(row)[0];
-                const campaignName = row[c_name_col] || "Unknown";
+                const c_name = row[findColumn(row, ['campaign name', 'campaign'])] || "N/A";
+                const spend = cleanNum(row[findColumn(row, ['amount spent', 'spend'])]);
+                const results = cleanNum(row[findColumn(row, ['results', 'purchase', 'website purchases'])]);
                 
-                const c_spend = findColumn(row, ['amount spent', 'spend']);
-                const c_results = findColumn(row, ['results', 'purchase', 'website purchases']);
-                const spend = cleanNum(row[c_spend]);
-                const results = cleanNum(row[c_results]);
-
                 if (spend === 0 && results === 0) return;
 
-                // ক্যাম্পেইন টাইপ ডিটেকশন (মেসেজ না কি সেল)
-                let isMessage = campaignName.toLowerCase().includes('msg') || 
-                                campaignName.toLowerCase().includes('message') || 
-                                String(row[c_results]).toLowerCase().includes('conversation');
-                
-                // মেসেজ ক্যাম্পেইন হলে ডিফল্ট অর্ডার ০, সেল হলে ডিফল্ট অর্ডার = রেজাল্ট
+                // টাইপ ডিটেকশন
+                let isMessage = c_name.toLowerCase().includes('msg') || c_name.toLowerCase().includes('message');
                 let defaultOrders = isMessage ? 0 : results;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="color:#fff">${campaignName}</td>
-                    <td><span class="${isMessage ? 'tag-msg' : 'tag-sale'}">${isMessage ? 'Messaging' : 'Sales'}</span></td>
-                    <td class="row-spend">$${spend.toFixed(2)}</td>
-                    <td>${results} ${isMessage ? '💬' : '🛒'}</td>
-                    <td>${cleanNum(row[findColumn(row, ['roas'])]).toFixed(2)}</td>
+                    <td style="color:#fff">${c_name}</td>
+                    <td><span class="${isMessage ? 'tag-msg' : 'tag-sale'}">${isMessage ? 'MSG' : 'SALE'}</span></td>
+                    <td>${row[findColumn(row, ['budget'])] || '—'}</td>
+                    <td>${cleanNum(row[findColumn(row, ['reach'])]).toLocaleString()}</td>
+                    <td>${cleanNum(row[findColumn(row, ['impressions'])]).toLocaleString()}</td>
+                    <td>${cleanNum(row[findColumn(row, ['frequency'])]).toFixed(2)}</td>
+                    <td>$${cleanNum(row[findColumn(row, ['cpm'])]).toFixed(2)}</td>
+                    <td>${cleanNum(row[findColumn(row, ['link clicks', 'clicks'])])}</td>
                     <td>${cleanNum(row[findColumn(row, ['ctr'])]).toFixed(2)}%</td>
+                    <td>${cleanNum(row[findColumn(row, ['landing page', 'lpv'])])}</td>
+                    <td>${results} ${isMessage ? '💬' : '🛒'}</td>
+                    <td class="row-spend">$${spend.toFixed(2)}</td>
+                    <td>$${cleanNum(row[findColumn(row, ['cost per result', 'cpr'])]).toFixed(2)}</td>
+                    <td>${cleanNum(row[findColumn(row, ['roas'])]).toFixed(2)}</td>
                     <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
                     <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
                     <td><input type="number" value="${defaultOrders}" class="m-orders" style="border: 1px solid var(--blue)" oninput="updateAll()"></td>
@@ -135,6 +144,7 @@
                 `;
                 tbody.appendChild(tr);
             });
+            document.getElementById('status').innerText = "All metrics loaded!";
             updateAll();
         }
 
