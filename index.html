@@ -3,201 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Marketing Performance Dashboard</title>
+    <title>Pro Ads & Profit Analyzer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root {
-            --bg-color: #0b0e14;
-            --card-bg: #161b22;
-            --text-color: #ffffff;
-            --accent-blue: #2f80ed;
-            --accent-green: #27ae60;
-            --accent-orange: #f2994a;
-            --accent-pink: #eb5757;
+            --bg: #090b10;
+            --card: #12151c;
+            --border: #21262d;
+            --text: #ffffff;
+            --muted: #8b949e;
+            --blue: #2f80ed;
+            --green: #27ae60;
+            --orange: #f2994a;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0; padding: 20px;
         }
 
         .header {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            align-items: center;
-        }
-
-        input[type="text"] {
-            flex-grow: 1;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #333;
-            background: #1c2128;
-            color: white;
-        }
-
-        button {
-            padding: 10px 20px;
-            background-color: var(--accent-blue);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            display: flex; gap: 10px; align-items: center;
+            background: var(--card); padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; border: 1px solid var(--border);
         }
 
         .kpi-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 15px; margin-bottom: 20px;
         }
 
         .card {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
-            border-bottom: 4px solid var(--accent-blue);
+            background: var(--card); padding: 20px; border-radius: 10px;
+            border: 1px solid var(--border); border-bottom: 4px solid var(--blue);
         }
 
-        .card h3 { margin: 0; font-size: 14px; color: #8b949e; }
-        .card .value { font-size: 24px; font-weight: bold; margin-top: 10px; }
+        .card h3 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; }
+        .card .val { font-size: 26px; font-weight: bold; margin-top: 10px; }
 
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
+        .table-container {
+            background: var(--card); padding: 20px; border-radius: 10px;
+            border: 1px solid var(--border); overflow-x: auto;
         }
 
-        .chart-box {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 10px;
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); background: #1c2128; }
+
+        input[type="number"], input[type="text"] {
+            background: #0d1117; border: 1px solid var(--border);
+            color: white; padding: 5px; border-radius: 4px; width: 80px;
         }
 
-        canvas { width: 100% !important; }
+        .btn {
+            background: var(--blue); color: white; border: none;
+            padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600;
+        }
+
+        .profit-text { color: var(--green); font-weight: bold; }
+        .loss-text { color: #eb5757; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <input type="text" id="sheetUrl" placeholder="Paste Google Sheet Published CSV Link here...">
-        <button onclick="loadData()">Refresh Data</button>
+        <input type="text" id="csvUrl" placeholder="Paste CSV Link or Upload file..." style="flex:1; background: #0d1117; color:white; border: 1px solid var(--border); padding: 8px; border-radius:5px;">
+        <button class="btn" onclick="loadFromUrl()">Refresh Data</button>
+        <input type="file" id="fileInp" style="display:none" accept=".csv" onchange="loadFile(event)">
+        <button class="btn" style="background:#21262d" onclick="document.getElementById('fileInp').click()">Upload CSV</button>
     </div>
 
-    <div class="kpi-container" id="kpiBoard">
-        <div class="card" style="border-color: var(--accent-blue);">
-            <h3>TOTAL SPEND</h3>
-            <div class="value" id="totalSpend">$0</div>
-        </div>
-        <div class="card" style="border-color: var(--accent-green);">
-            <h3>TOTAL LEADS</h3>
-            <div class="value" id="totalLeads">0</div>
-        </div>
-        <div class="card" style="border-color: var(--accent-orange);">
-            <h3>AVG CPL</h3>
-            <div class="value" id="avgCPL">$0</div>
-        </div>
-        <div class="card" style="border-color: var(--accent-pink);">
-            <h3>TOTAL REACH</h3>
-            <div class="value" id="totalReach">0</div>
-        </div>
+    <div class="kpi-container">
+        <div class="card"><h3>Total Spend</h3><div class="val" id="totalSpend">$0</div></div>
+        <div class="card" style="border-color: var(--green);"><h3>Total Revenue</h3><div class="val" id="totalRev">$0</div></div>
+        <div class="card" style="border-color: var(--orange);"><h3>Net Profit</h3><div class="val" id="totalProfit">$0</div></div>
+        <div class="card"><h3>Avg ROAS</h3><div class="val" id="avgRoas">0.0</div></div>
     </div>
 
-    <div class="charts-grid">
-        <div class="chart-box">
-            <h3>Weekly Spend & Leads</h3>
-            <canvas id="mainChart"></canvas>
-        </div>
-        <div class="chart-box">
-            <h3>Lead Type Split</h3>
-            <canvas id="pieChart"></canvas>
-        </div>
+    <div class="table-container">
+        <h2>Campaign Performance & Manual Profit Entry</h2>
+        <table id="adTable">
+            <thead>
+                <tr>
+                    <th>Campaign</th>
+                    <th>Spend</th>
+                    <th>Result</th>
+                    <th>CPM</th>
+                    <th>CTR %</th>
+                    <th>Purchases</th>
+                    <th>Product Cost ($)</th>
+                    <th>Selling Price ($)</th>
+                    <th>Orders</th>
+                    <th>Revenue</th>
+                    <th>Net Profit</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Data will be injected here -->
+            </tbody>
+        </table>
     </div>
 
     <script>
-        let mainChart, pieChart;
+        let adData = [];
 
-        async function loadData() {
-            const url = document.getElementById('sheetUrl').value;
-            if(!url) return alert("Please paste a CSV link!");
+        function loadFile(event) {
+            Papa.parse(event.target.files[0], {
+                header: true, dynamicTyping: true,
+                complete: (res) => { adData = res.data; renderTable(); }
+            });
+        }
 
+        function loadFromUrl() {
+            const url = document.getElementById('csvUrl').value;
             Papa.parse(url, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    processData(results.data);
-                }
+                download: true, header: true, dynamicTyping: true,
+                complete: (res) => { adData = res.data; renderTable(); }
             });
         }
 
-        function processData(data) {
-            let totalSpend = 0, totalLeads = 0, totalReach = 0;
-            let labels = [], spendData = [], leadData = [];
-
-            data.forEach(row => {
-                if(row.Spend) {
-                    totalSpend += parseFloat(row.Spend.replace(/[^0-9.-]+/g,""));
-                    totalLeads += parseInt(row.Leads);
-                    totalReach += parseInt(row.Reach || 0);
-                    labels.push(row.Date || row.Week);
-                    spendData.push(parseFloat(row.Spend));
-                    leadData.push(parseInt(row.Leads));
-                }
-            });
-
-            // Update KPIs
-            document.getElementById('totalSpend').innerText = '$' + totalSpend.toLocaleString();
-            document.getElementById('totalLeads').innerText = totalLeads.toLocaleString();
-            document.getElementById('avgCPL').innerText = '$' + (totalSpend / totalLeads).toFixed(2);
-            document.getElementById('totalReach').innerText = totalReach.toLocaleString();
-
-            updateCharts(labels, spendData, leadData);
-        }
-
-        function updateCharts(labels, spendData, leadData) {
-            const ctx1 = document.getElementById('mainChart').getContext('2d');
-            if(mainChart) mainChart.destroy();
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
             
-            mainChart = new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        {
-                            label: 'Spend ($)',
-                            data: spendData,
-                            backgroundColor: '#2f80ed'
-                        },
-                        {
-                            label: 'Leads',
-                            data: leadData,
-                            type: 'line',
-                            borderColor: '#27ae60',
-                            fill: false
-                        }
-                    ]
-                },
-                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            adData.forEach((row, index) => {
+                if(!row.Campaign) return;
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.Campaign}</td>
+                    <td>$${row['Amount Spent'] || 0}</td>
+                    <td>${row.result || 0}</td>
+                    <td>$${row.CPM || 0}</td>
+                    <td>${row['CTR %'] || 0}%</td>
+                    <td>${row.PURCHASE || 0}</td>
+                    <td><input type="number" value="10" oninput="calculateRow(${index}, this, 'cost')"></td>
+                    <td><input type="number" value="50" oninput="calculateRow(${index}, this, 'price')"></td>
+                    <td><input type="number" value="${row.PURCHASE || 0}" oninput="calculateRow(${index}, this, 'orders')"></td>
+                    <td id="rev-${index}">$0</td>
+                    <td id="profit-${index}">$0</td>
+                `;
+                tbody.appendChild(tr);
+                
+                // Initial calculation
+                calculateRow(index);
             });
+        }
 
-            // Pie Chart Demo
-            const ctx2 = document.getElementById('pieChart').getContext('2d');
-            if(pieChart) pieChart.destroy();
-            pieChart = new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Calendly Leads', 'SLP Leads'],
-                    datasets: [{
-                        data: [60, 40],
-                        backgroundColor: ['#2f80ed', '#27ae60']
-                    }]
-                }
-            });
+        function calculateRow(index, elem, type) {
+            const row = adData[index];
+            const spend = row['Amount Spent'] || 0;
+            
+            const tr = document.getElementById('tableBody').children[index];
+            const cost = parseFloat(tr.cells[6].querySelector('input').value) || 0;
+            const price = parseFloat(tr.cells[7].querySelector('input').value) || 0;
+            const orders = parseFloat(tr.cells[8].querySelector('input').value) || 0;
+
+            const revenue = price * orders;
+            const totalProductCost = cost * orders;
+            const netProfit = revenue - (totalProductCost + spend);
+
+            document.getElementById(`rev-${index}`).innerText = '$' + revenue.toFixed(2);
+            const profitCell = document.getElementById(`profit-${index}`);
+            profitCell.innerText = '$' + netProfit.toFixed(2);
+            profitCell.className = netProfit >= 0 ? 'profit-text' : 'loss-text';
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            let totalSpend = 0, totalRev = 0, totalProfit = 0;
+            
+            const rows = document.getElementById('tableBody').children;
+            for(let i=0; i<rows.length; i++) {
+                totalSpend += parseFloat(adData[i]['Amount Spent'] || 0);
+                totalRev += parseFloat(rows[i].cells[9].innerText.replace('$',''));
+                totalProfit += parseFloat(rows[i].cells[10].innerText.replace('$',''));
+            }
+
+            document.getElementById('totalSpend').innerText = '$' + totalSpend.toLocaleString();
+            document.getElementById('totalRev').innerText = '$' + totalRev.toLocaleString();
+            document.getElementById('totalProfit').innerText = '$' + totalProfit.toLocaleString();
+            document.getElementById('avgRoas').innerText = (totalSpend > 0 ? (totalRev / totalSpend).toFixed(2) : 0);
         }
     </script>
 </body>
