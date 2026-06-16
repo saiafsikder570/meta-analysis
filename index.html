@@ -3,125 +3,85 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro Ads & Profit Analyzer</title>
+    <title>Robust Ads & Profit Analyzer</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root {
-            --bg: #090b10;
-            --card: #12151c;
-            --border: #21262d;
-            --text: #ffffff;
-            --muted: #8b949e;
-            --blue: #2f80ed;
-            --green: #27ae60;
-            --orange: #f2994a;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            margin: 0; padding: 20px;
-        }
-
-        .header {
-            display: flex; gap: 10px; align-items: center;
-            background: var(--card); padding: 15px; border-radius: 8px;
-            margin-bottom: 20px; border: 1px solid var(--border);
-        }
-
-        .kpi-container {
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 15px; margin-bottom: 20px;
-        }
-
-        .card {
-            background: var(--card); padding: 20px; border-radius: 10px;
-            border: 1px solid var(--border); border-bottom: 4px solid var(--blue);
-        }
-
+        :root { --bg: #090b10; --card: #12151c; --border: #21262d; --text: #ffffff; --muted: #8b949e; --blue: #2f80ed; --green: #27ae60; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; gap: 10px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); border-bottom: 4px solid var(--blue); text-align: center; }
         .card h3 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; }
         .card .val { font-size: 26px; font-weight: bold; margin-top: 10px; }
-
-        .table-container {
-            background: var(--card); padding: 20px; border-radius: 10px;
-            border: 1px solid var(--border); overflow-x: auto;
-        }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        .table-box { background: var(--card); padding: 20px; border-radius: 10px; border: 1px solid var(--border); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
         th { color: var(--muted); background: #1c2128; }
-
-        input[type="number"], input[type="text"] {
-            background: #0d1117; border: 1px solid var(--border);
-            color: white; padding: 5px; border-radius: 4px; width: 80px;
-        }
-
-        .btn {
-            background: var(--blue); color: white; border: none;
-            padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: 600;
-        }
-
-        .profit-text { color: var(--green); font-weight: bold; }
-        .loss-text { color: #eb5757; font-weight: bold; }
+        input[type="number"] { background: #0d1117; border: 1px solid var(--border); color: white; padding: 5px; border-radius: 4px; width: 70px; }
+        .btn { background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        .profit { color: var(--green); font-weight: bold; }
+        .loss { color: #eb5757; font-weight: bold; }
+        #status { color: var(--orange); font-size: 12px; margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <input type="text" id="csvUrl" placeholder="Paste CSV Link or Upload file..." style="flex:1; background: #0d1117; color:white; border: 1px solid var(--border); padding: 8px; border-radius:5px;">
-        <button class="btn" onclick="loadFromUrl()">Refresh Data</button>
-        <input type="file" id="fileInp" style="display:none" accept=".csv" onchange="loadFile(event)">
-        <button class="btn" style="background:#21262d" onclick="document.getElementById('fileInp').click()">Upload CSV</button>
+        <div style="flex:1">
+            <h2 style="margin:0">Facebook Ads Profit Analyzer</h2>
+            <div id="status">Waiting for CSV file...</div>
+        </div>
+        <input type="file" id="fileInp" accept=".csv" onchange="loadFile(event)">
+        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload Facebook CSV</button>
     </div>
 
-    <div class="kpi-container">
+    <div class="kpi-grid">
         <div class="card"><h3>Total Spend</h3><div class="val" id="totalSpend">$0</div></div>
         <div class="card" style="border-color: var(--green);"><h3>Total Revenue</h3><div class="val" id="totalRev">$0</div></div>
-        <div class="card" style="border-color: var(--orange);"><h3>Net Profit</h3><div class="val" id="totalProfit">$0</div></div>
-        <div class="card"><h3>Avg ROAS</h3><div class="val" id="avgRoas">0.0</div></div>
+        <div class="card" style="border-color: #f2994a;"><h3>Net Profit</h3><div class="val" id="totalProfit">$0</div></div>
+        <div class="card"><h3>ROAS</h3><div class="val" id="totalRoas">0.0</div></div>
     </div>
 
-    <div class="table-container">
-        <h2>Campaign Performance & Manual Profit Entry</h2>
+    <div class="table-box">
         <table id="adTable">
             <thead>
-                <tr>
+                <tr id="tableHead">
                     <th>Campaign</th>
                     <th>Spend</th>
-                    <th>Result</th>
-                    <th>CPM</th>
-                    <th>CTR %</th>
                     <th>Purchases</th>
                     <th>Product Cost ($)</th>
                     <th>Selling Price ($)</th>
-                    <th>Orders</th>
+                    <th>Orders (Adj)</th>
                     <th>Revenue</th>
-                    <th>Net Profit</th>
+                    <th>Profit</th>
                 </tr>
             </thead>
-            <tbody id="tableBody">
-                <!-- Data will be injected here -->
-            </tbody>
+            <tbody id="tableBody"></tbody>
         </table>
     </div>
 
     <script>
         let adData = [];
 
-        function loadFile(event) {
-            Papa.parse(event.target.files[0], {
-                header: true, dynamicTyping: true,
-                complete: (res) => { adData = res.data; renderTable(); }
-            });
+        function cleanNum(val) {
+            if (!val) return 0;
+            // $ চিহ্ন বা কমা সরিয়ে শুধু সংখ্যা রাখা
+            return parseFloat(String(val).replace(/[^0-9.-]+/g, "")) || 0;
         }
 
-        function loadFromUrl() {
-            const url = document.getElementById('csvUrl').value;
-            Papa.parse(url, {
-                download: true, header: true, dynamicTyping: true,
-                complete: (res) => { adData = res.data; renderTable(); }
+        function loadFile(event) {
+            const file = event.target.files[0];
+            document.getElementById('status').innerText = "Loading: " + file.name;
+            
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    console.log("Parsed Data:", results.data); // ব্রাউজার কনসোলে ডাটা চেক করার জন্য
+                    adData = results.data;
+                    renderTable();
+                }
             });
         }
 
@@ -130,64 +90,62 @@
             tbody.innerHTML = '';
             
             adData.forEach((row, index) => {
-                if(!row.Campaign) return;
-                
+                // কলামের নাম যাই হোক না কেন, ডাটা খুঁজে বের করার চেষ্টা
+                const campaign = row.Campaign || row['Campaign name'] || row['Ad Set Name'] || "Unknown";
+                const spend = cleanNum(row['Amount Spent'] || row.Spend || row['Amount spent (USD)']);
+                const purchase = cleanNum(row.PURCHASE || row.Results || row.Purchase || 0);
+
+                if (spend === 0 && purchase === 0) return; // ফালতু রো বাদ দেয়া
+
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.Campaign}</td>
-                    <td>$${row['Amount Spent'] || 0}</td>
-                    <td>${row.result || 0}</td>
-                    <td>$${row.CPM || 0}</td>
-                    <td>${row['CTR %'] || 0}%</td>
-                    <td>${row.PURCHASE || 0}</td>
-                    <td><input type="number" value="10" oninput="calculateRow(${index}, this, 'cost')"></td>
-                    <td><input type="number" value="50" oninput="calculateRow(${index}, this, 'price')"></td>
-                    <td><input type="number" value="${row.PURCHASE || 0}" oninput="calculateRow(${index}, this, 'orders')"></td>
-                    <td id="rev-${index}">$0</td>
-                    <td id="profit-${index}">$0</td>
+                    <td>${campaign}</td>
+                    <td>$${spend.toFixed(2)}</td>
+                    <td>${purchase}</td>
+                    <td><input type="number" value="10" oninput="calculateProfit(${index}, this.parentElement.parentElement)"></td>
+                    <td><input type="number" value="50" oninput="calculateProfit(${index}, this.parentElement.parentElement)"></td>
+                    <td><input type="number" value="${purchase}" oninput="calculateProfit(${index}, this.parentElement.parentElement)"></td>
+                    <td class="row-rev">$0</td>
+                    <td class="row-profit">$0</td>
                 `;
                 tbody.appendChild(tr);
-                
-                // Initial calculation
-                calculateRow(index);
+                calculateProfit(index, tr, spend);
             });
+            document.getElementById('status').innerText = "Data Loaded Successfully!";
         }
 
-        function calculateRow(index, elem, type) {
+        function calculateProfit(index, tr, fixedSpend = null) {
             const row = adData[index];
-            const spend = row['Amount Spent'] || 0;
+            const spend = fixedSpend !== null ? fixedSpend : cleanNum(row['Amount Spent'] || row.Spend || row['Amount spent (USD)']);
             
-            const tr = document.getElementById('tableBody').children[index];
-            const cost = parseFloat(tr.cells[6].querySelector('input').value) || 0;
-            const price = parseFloat(tr.cells[7].querySelector('input').value) || 0;
-            const orders = parseFloat(tr.cells[8].querySelector('input').value) || 0;
+            const cost = parseFloat(tr.cells[3].querySelector('input').value) || 0;
+            const price = parseFloat(tr.cells[4].querySelector('input').value) || 0;
+            const orders = parseFloat(tr.cells[5].querySelector('input').value) || 0;
 
             const revenue = price * orders;
-            const totalProductCost = cost * orders;
-            const netProfit = revenue - (totalProductCost + spend);
+            const profit = revenue - (spend + (cost * orders));
 
-            document.getElementById(`rev-${index}`).innerText = '$' + revenue.toFixed(2);
-            const profitCell = document.getElementById(`profit-${index}`);
-            profitCell.innerText = '$' + netProfit.toFixed(2);
-            profitCell.className = netProfit >= 0 ? 'profit-text' : 'loss-text';
+            tr.cells[6].innerText = '$' + revenue.toFixed(2);
+            tr.cells[7].innerText = '$' + profit.toFixed(2);
+            tr.cells[7].className = profit >= 0 ? 'profit' : 'loss';
 
             updateSummary();
         }
 
         function updateSummary() {
-            let totalSpend = 0, totalRev = 0, totalProfit = 0;
+            let tSpend = 0, tRev = 0, tProfit = 0;
+            const rows = document.querySelectorAll('#tableBody tr');
             
-            const rows = document.getElementById('tableBody').children;
-            for(let i=0; i<rows.length; i++) {
-                totalSpend += parseFloat(adData[i]['Amount Spent'] || 0);
-                totalRev += parseFloat(rows[i].cells[9].innerText.replace('$',''));
-                totalProfit += parseFloat(rows[i].cells[10].innerText.replace('$',''));
-            }
+            rows.forEach(row => {
+                tSpend += parseFloat(row.cells[1].innerText.replace('$', '')) || 0;
+                tRev += parseFloat(row.cells[6].innerText.replace('$', '')) || 0;
+                tProfit += parseFloat(row.cells[7].innerText.replace('$', '')) || 0;
+            });
 
-            document.getElementById('totalSpend').innerText = '$' + totalSpend.toLocaleString();
-            document.getElementById('totalRev').innerText = '$' + totalRev.toLocaleString();
-            document.getElementById('totalProfit').innerText = '$' + totalProfit.toLocaleString();
-            document.getElementById('avgRoas').innerText = (totalSpend > 0 ? (totalRev / totalSpend).toFixed(2) : 0);
+            document.getElementById('totalSpend').innerText = '$' + tSpend.toLocaleString();
+            document.getElementById('totalRev').innerText = '$' + tRev.toLocaleString();
+            document.getElementById('totalProfit').innerText = '$' + tProfit.toLocaleString();
+            document.getElementById('totalRoas').innerText = tSpend > 0 ? (tRev / tSpend).toFixed(2) : '0.0';
         }
     </script>
 </body>
