@@ -3,71 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Pro Analyzer (USD to BDT)</title>
+    <title>Smart Ads Analyzer | Zero-Error Version</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
-        :root { --bg: #090b10; --card: #12151c; --border: #21262d; --text: #ffffff; --muted: #8b949e; --blue: #2f80ed; --green: #27ae60; --orange: #f2994a; --red: #eb5757; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; padding: 15px; font-size: 13px; }
-        .header { display: flex; gap: 15px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); align-items: center; flex-wrap: wrap; }
-        .setting-box { display: flex; align-items: center; gap: 10px; background: #1c2128; padding: 8px 15px; border-radius: 5px; border: 1px solid var(--border); }
+        :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
+        body { background-color: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; margin: 0; padding: 15px; font-size: 13px; }
+        .header { display: flex; gap: 15px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); align-items: center; }
+        .setting-box { display: flex; align-items: center; gap: 10px; background: #21262d; padding: 8px 15px; border-radius: 5px; border: 1px solid var(--border); }
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; }
         .card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); border-bottom: 3px solid var(--blue); }
-        .card h3 { margin: 0; font-size: 11px; color: var(--muted); text-transform: uppercase; }
-        .card .val { font-size: 22px; font-weight: bold; margin-top: 8px; }
+        .card h3 { margin: 0; font-size: 11px; color: #8b949e; text-transform: uppercase; }
+        .card .val { font-size: 24px; font-weight: bold; margin-top: 8px; color: #fff; }
         .table-container { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1500px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px solid #1c2128; }
-        th { background: #1c2128; color: var(--muted); font-size: 11px; position: sticky; top: 0; }
-        input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; width: 60px; outline: none; }
+        table { width: 100%; border-collapse: collapse; min-width: 1400px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #21262d; color: #8b949e; font-size: 11px; position: sticky; top: 0; }
+        input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; width: 65px; }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
-        .btn { background: var(--blue); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+        .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        #status { font-size: 12px; color: var(--orange); margin-top: 5px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2 style="margin:0; flex:1">Facebook Ads Profit Center</h2>
-        
+        <div style="flex:1">
+            <h2 style="margin:0; color: white;">Facebook Ads Profit Analyzer</h2>
+            <div id="status">Upload your CSV to begin...</div>
+        </div>
         <div class="setting-box">
             <span>$1 = </span>
-            <input type="number" id="exRate" value="120" style="width: 50px;" oninput="updateAll()">
+            <input type="number" id="exRate" value="120" oninput="updateAll()">
             <span>BDT</span>
         </div>
-
         <input type="file" id="fileInp" accept=".csv" hidden onchange="loadFile(event)">
-        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload CSV</button>
+        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload Facebook CSV</button>
     </div>
 
-    <div class="kpi-grid">
+    <div class="kpi-grid" id="kpiBoard">
         <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0</div></div>
         <div class="card" style="border-color: var(--orange);"><h3>Total Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
         <div class="card" style="border-color: var(--green);"><h3>Total Revenue (BDT)</h3><div class="val" id="kpi-rev">৳0</div></div>
-        <div class="card" id="kpi-profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
-        <div class="card" style="border-color: var(--purple);"><h3>Avg. ROAS</h3><div class="val" id="kpi-roas">0.0</div></div>
+        <div class="card" id="profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
     </div>
 
     <div class="table-container">
         <table>
             <thead>
                 <tr>
-                    <th>Campaign</th>
-                    <th>Budget</th>
+                    <th>Campaign Name</th>
                     <th>Reach</th>
                     <th>Imp.</th>
+                    <th>Spend ($)</th>
+                    <th>Purchases</th>
                     <th>CPM</th>
                     <th>Clicks</th>
                     <th>CTR %</th>
                     <th>LPV</th>
-                    <th>Purchases</th>
-                    <th>Spend ($)</th>
-                    <th>CPR ($)</th>
                     <th>ROAS</th>
                     <th style="background:#1c2e1c">Cost/Item (৳)</th>
                     <th style="background:#1c2e1c">Sell/Item (৳)</th>
                     <th style="background:#1c2e1c">Orders</th>
                     <th style="background:#1c2e1c">Revenue (৳)</th>
-                    <th style="background:#1c2e1c; border-right:none">Profit (৳)</th>
+                    <th style="background:#1c2e1c">Net Profit (৳)</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -75,17 +74,38 @@
     </div>
 
     <script>
-        let adData = [];
+        let rawData = [];
 
-        function clean(val) {
-            if (!val) return 0;
-            return parseFloat(String(val).replace(/[^0-9.-]+/g, "")) || 0;
+        // কলাম খুঁজে বের করার স্মার্ট ফাংশন
+        function getVal(row, keywords) {
+            const keys = Object.keys(row);
+            for (let key of keys) {
+                let lowKey = key.toLowerCase().trim();
+                for (let word of keywords) {
+                    if (lowKey === word.toLowerCase() || lowKey.includes(word.toLowerCase())) {
+                        let val = String(row[key]).replace(/[^0-9.-]+/g, "");
+                        return parseFloat(val) || 0;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        // ক্যাম্পেইন নাম খোঁজার ফাংশন
+        function getCampaignName(row) {
+            const keys = Object.keys(row);
+            for (let key of keys) {
+                if (key.toLowerCase().includes('campaign') || key.toLowerCase().includes('ad set')) return row[key];
+            }
+            return "Unknown";
         }
 
         function loadFile(e) {
-            Papa.parse(e.target.files[0], {
+            const file = e.target.files[0];
+            document.getElementById('status').innerText = "Processing: " + file.name;
+            Papa.parse(file, {
                 header: true, skipEmptyLines: true,
-                complete: (res) => { adData = res.data; render(); }
+                complete: (res) => { rawData = res.data; render(); }
             });
         }
 
@@ -93,33 +113,35 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
-            adData.forEach((row, i) => {
-                const name = row.Campaign || row['Campaign name'] || "N/A";
-                const spend = clean(row['Amount Spent'] || row.Spend || 0);
-                if(spend === 0 && !row.Purchases) return;
+            rawData.forEach((row, i) => {
+                const spend = getVal(row, ['amount spent', 'spend', 'cost']);
+                const reach = getVal(row, ['reach']);
+                const imp = getVal(row, ['impressions']);
+                const purchases = getVal(row, ['purchase', 'results', 'conversions']);
+                
+                if(spend === 0 && purchases === 0 && reach === 0) return;
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${name}</td>
-                    <td>${row.Budget || '-'}</td>
-                    <td>${(row.Reach || 0).toLocaleString()}</td>
-                    <td>${(row.Impressions || 0).toLocaleString()}</td>
-                    <td>$${clean(row.CPM).toFixed(2)}</td>
-                    <td>${row['Link Clicks'] || row.Clicks || 0}</td>
-                    <td>${row['CTR %'] || row.CTR || 0}%</td>
-                    <td>${row['Landing page views (LPV)'] || row.LPV || 0}</td>
-                    <td>${row.PURCHASE || row.Results || 0}</td>
-                    <td>$${spend.toFixed(2)}</td>
-                    <td>$${clean(row['Cost per result (CPR)'] || 0).toFixed(2)}</td>
-                    <td>${clean(row.ROAS).toFixed(2)}</td>
+                    <td>${getCampaignName(row)}</td>
+                    <td>${reach.toLocaleString()}</td>
+                    <td>${imp.toLocaleString()}</td>
+                    <td class="row-spend">$${spend.toFixed(2)}</td>
+                    <td>${purchases}</td>
+                    <td>$${getVal(row, ['cpm']).toFixed(2)}</td>
+                    <td>${getVal(row, ['clicks', 'link clicks'])}</td>
+                    <td>${getVal(row, ['ctr']).toFixed(2)}%</td>
+                    <td>${getVal(row, ['lpv', 'landing page'])}</td>
+                    <td>${getVal(row, ['roas', 'return on ad']).toFixed(2)}</td>
                     <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
                     <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
-                    <td><input type="number" value="${clean(row.PURCHASE || row.Results)}" class="m-orders" oninput="updateAll()"></td>
+                    <td><input type="number" value="${purchases}" class="m-orders" oninput="updateAll()"></td>
                     <td class="row-rev">৳0</td>
                     <td class="row-profit">৳0</td>
                 `;
                 tbody.appendChild(tr);
             });
+            document.getElementById('status').innerText = "Data Loaded Successfully!";
             updateAll();
         }
 
@@ -128,8 +150,8 @@
             let totalSpendUSD = 0, totalRevBDT = 0, totalProfitBDT = 0;
             const rows = document.querySelectorAll('#tableBody tr');
 
-            rows.forEach((tr, i) => {
-                const spendUSD = parseFloat(tr.cells[9].innerText.replace('$', '')) || 0;
+            rows.forEach((tr) => {
+                const spendUSD = parseFloat(tr.querySelector('.row-spend').innerText.replace('$', '')) || 0;
                 const cost = parseFloat(tr.querySelector('.m-cost').value) || 0;
                 const price = parseFloat(tr.querySelector('.m-price').value) || 0;
                 const orders = parseFloat(tr.querySelector('.m-orders').value) || 0;
@@ -138,9 +160,10 @@
                 const spendBDT = spendUSD * rate;
                 const profit = revenue - (spendBDT + (cost * orders));
 
-                tr.cells[15].innerText = '৳' + revenue.toLocaleString();
-                tr.cells[16].innerText = '৳' + profit.toLocaleString();
-                tr.cells[16].className = profit >= 0 ? 'profit' : 'loss';
+                tr.querySelector('.row-rev').innerText = '৳' + revenue.toLocaleString();
+                const pCell = tr.querySelector('.row-profit');
+                pCell.innerText = '৳' + profit.toLocaleString();
+                pCell.className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
 
                 totalSpendUSD += spendUSD;
                 totalRevBDT += revenue;
@@ -151,9 +174,9 @@
             document.getElementById('kpi-spend-bdt').innerText = '৳' + (totalSpendUSD * rate).toLocaleString();
             document.getElementById('kpi-rev').innerText = '৳' + totalRevBDT.toLocaleString();
             document.getElementById('kpi-profit').innerText = '৳' + totalProfitBDT.toLocaleString();
-            document.getElementById('kpi-roas').innerText = totalSpendUSD > 0 ? (totalRevBDT / (totalSpendUSD * rate)).toFixed(2) : '0.0';
             
-            document.getElementById('kpi-profit-card').style.borderColor = totalProfitBDT >= 0 ? 'var(--green)' : 'var(--red)';
+            const roas = totalSpendUSD > 0 ? (totalRevBDT / (totalSpendUSD * rate)) : 0;
+            document.getElementById('profit-card').style.borderColor = totalProfitBDT >= 0 ? 'var(--green)' : 'var(--red)';
         }
     </script>
 </body>
