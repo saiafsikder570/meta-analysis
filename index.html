@@ -1,1 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketing Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: #161b22;
+            --text-color: #ffffff;
+            --accent-blue: #2f80ed;
+            --accent-green: #27ae60;
+            --accent-orange: #f2994a;
+            --accent-pink: #eb5757;
+        }
 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #333;
+            background: #1c2128;
+            color: white;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            border-bottom: 4px solid var(--accent-blue);
+        }
+
+        .card h3 { margin: 0; font-size: 14px; color: #8b949e; }
+        .card .value { font-size: 24px; font-weight: bold; margin-top: 10px; }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-box {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        canvas { width: 100% !important; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <input type="text" id="sheetUrl" placeholder="Paste Google Sheet Published CSV Link here...">
+        <button onclick="loadData()">Refresh Data</button>
+    </div>
+
+    <div class="kpi-container" id="kpiBoard">
+        <div class="card" style="border-color: var(--accent-blue);">
+            <h3>TOTAL SPEND</h3>
+            <div class="value" id="totalSpend">$0</div>
+        </div>
+        <div class="card" style="border-color: var(--accent-green);">
+            <h3>TOTAL LEADS</h3>
+            <div class="value" id="totalLeads">0</div>
+        </div>
+        <div class="card" style="border-color: var(--accent-orange);">
+            <h3>AVG CPL</h3>
+            <div class="value" id="avgCPL">$0</div>
+        </div>
+        <div class="card" style="border-color: var(--accent-pink);">
+            <h3>TOTAL REACH</h3>
+            <div class="value" id="totalReach">0</div>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        <div class="chart-box">
+            <h3>Weekly Spend & Leads</h3>
+            <canvas id="mainChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <h3>Lead Type Split</h3>
+            <canvas id="pieChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let mainChart, pieChart;
+
+        async function loadData() {
+            const url = document.getElementById('sheetUrl').value;
+            if(!url) return alert("Please paste a CSV link!");
+
+            Papa.parse(url, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    processData(results.data);
+                }
+            });
+        }
+
+        function processData(data) {
+            let totalSpend = 0, totalLeads = 0, totalReach = 0;
+            let labels = [], spendData = [], leadData = [];
+
+            data.forEach(row => {
+                if(row.Spend) {
+                    totalSpend += parseFloat(row.Spend.replace(/[^0-9.-]+/g,""));
+                    totalLeads += parseInt(row.Leads);
+                    totalReach += parseInt(row.Reach || 0);
+                    labels.push(row.Date || row.Week);
+                    spendData.push(parseFloat(row.Spend));
+                    leadData.push(parseInt(row.Leads));
+                }
+            });
+
+            // Update KPIs
+            document.getElementById('totalSpend').innerText = '$' + totalSpend.toLocaleString();
+            document.getElementById('totalLeads').innerText = totalLeads.toLocaleString();
+            document.getElementById('avgCPL').innerText = '$' + (totalSpend / totalLeads).toFixed(2);
+            document.getElementById('totalReach').innerText = totalReach.toLocaleString();
+
+            updateCharts(labels, spendData, leadData);
+        }
+
+        function updateCharts(labels, spendData, leadData) {
+            const ctx1 = document.getElementById('mainChart').getContext('2d');
+            if(mainChart) mainChart.destroy();
+            
+            mainChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Spend ($)',
+                            data: spendData,
+                            backgroundColor: '#2f80ed'
+                        },
+                        {
+                            label: 'Leads',
+                            data: leadData,
+                            type: 'line',
+                            borderColor: '#27ae60',
+                            fill: false
+                        }
+                    ]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            // Pie Chart Demo
+            const ctx2 = document.getElementById('pieChart').getContext('2d');
+            if(pieChart) pieChart.destroy();
+            pieChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Calendly Leads', 'SLP Leads'],
+                    datasets: [{
+                        data: [60, 40],
+                        backgroundColor: ['#2f80ed', '#27ae60']
+                    }]
+                }
+            });
+        }
+    </script>
+</body>
+</html>
