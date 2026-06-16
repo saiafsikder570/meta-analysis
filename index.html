@@ -3,68 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Pro Analysis | Advanced Profit Tracker</title>
+    <title>Meta Ads Master Pro | Accurate Analysis</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
-        body { background-color: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; font-size: 11px; }
-        .header { display: flex; gap: 15px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid var(--border); align-items: center; }
-        .setting-box { display: flex; align-items: center; gap: 10px; background: #21262d; padding: 8px 12px; border-radius: 5px; border: 1px solid var(--border); }
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 15px; }
+        body { background-color: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 15px; font-size: 11px; }
+        .header { display: flex; gap: 15px; background: var(--card); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border); align-items: center; }
+        .setting-box { display: flex; align-items: center; gap: 10px; background: #21262d; padding: 8px 15px; border-radius: 5px; border: 1px solid var(--border); }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px; }
         .card { background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); border-bottom: 3px solid var(--blue); }
         .card h3 { margin: 0; font-size: 10px; color: #8b949e; text-transform: uppercase; }
         .card .val { font-size: 20px; font-weight: bold; margin-top: 5px; color: #fff; }
-        .table-container { background: var(--card); padding: 12px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; min-width: 1800px; }
-        th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; }
+        .table-container { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 1700px; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; white-space: nowrap; }
         th { background: #21262d; color: #8b949e; position: sticky; top: 0; }
-        input { background: #0d1117; border: 1px solid var(--border); color: white; padding: 4px; border-radius: 3px; outline: none; width: 60px; }
+        input, select { background: #0d1117; border: 1px solid var(--border); color: white; padding: 3px; border-radius: 3px; outline: none; font-size: 11px; }
         .profit { color: var(--green); font-weight: bold; }
         .loss { color: var(--red); font-weight: bold; }
-        .btn { background: var(--blue); color: #fff; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        .inactive { opacity: 0.5; background: #00000033; }
-        .hidden { display: none; }
-        .toggle-box { margin-left: 20px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .btn { background: var(--blue); color: #fff; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .active-row { background: #1c2128; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Ads Analytics Dashboard v4.0</h2>
-            <div id="status" style="font-size: 11px; color: var(--orange);">Waiting for Facebook CSV...</div>
-        </div>
-        <div class="toggle-box">
-            <input type="checkbox" id="filterActive" onchange="toggleInactive()">
-            <label for="filterActive">Show Active Only</label>
+            <h2 style="margin:0; color: white;">Meta Ads Accurate Profit Center</h2>
+            <div id="status" style="font-size: 11px; color: var(--orange);">Upload CSV to sync data...</div>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
-            <input type="number" id="exRate" value="130" oninput="updateAll()">
+            <input type="number" id="exRate" value="130" style="width: 50px;" oninput="updateAll()">
             <span>BDT</span>
         </div>
         <input type="file" id="fileInp" accept=".csv" hidden onchange="loadFile(event)">
-        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload CSV</button>
+        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload Facebook CSV</button>
     </div>
 
     <div class="kpi-grid">
-        <div class="card"><h3>Total Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
-        <div class="card" style="border-color: var(--orange);"><h3>Total Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
+        <div class="card"><h3>Spend (USD)</h3><div class="val" id="kpi-spend">$0.00</div></div>
+        <div class="card" style="border-color: var(--orange);"><h3>Spend (BDT)</h3><div class="val" id="kpi-spend-bdt">৳0</div></div>
         <div class="card" style="border-color: var(--green);"><h3>Total Revenue (BDT)</h3><div class="val" id="kpi-rev">৳0</div></div>
         <div class="card" id="profit-card"><h3>Net Profit (BDT)</h3><div class="val" id="kpi-profit">৳0</div></div>
-        <div class="card" style="border-color: var(--purple);"><h3>Average ROAS</h3><div class="val" id="kpi-roas">0.00</div></div>
     </div>
 
     <div class="table-container">
         <table>
             <thead>
                 <tr>
-                    <th>Status</th>
+                    <th>#</th>
                     <th>Campaign Name</th>
+                    <th>Type</th>
+                    <th>Budget</th>
                     <th>Reach</th>
                     <th>Imp.</th>
-                    <th>Freq.</th>
-                    <th>CPM ($)</th>
+                    <th>Frequency</th>
+                    <th>CPM</th>
                     <th>Clicks</th>
                     <th>CTR %</th>
                     <th>LPV</th>
@@ -72,11 +67,10 @@
                     <th>Spend ($)</th>
                     <th>CPR ($)</th>
                     <th>ROAS</th>
-                    <th style="background:#1c2e1c">Cost/Item (৳)</th>
-                    <th style="background:#1c2e1c">Sell Price (৳)</th>
+                    <th style="background:#1c2e1c">Cost (৳)</th>
+                    <th style="background:#1c2e1c">Price (৳)</th>
                     <th style="background:#1c2e1c">Valid Orders</th>
-                    <th style="background:#1c2e1c">Revenue (৳)</th>
-                    <th style="background:#1c2e1c">Profit (৳)</th>
+                    <th style="background:#1c2e1c; border-right:none">Profit (৳)</th>
                 </tr>
             </thead>
             <tbody id="tableBody"></tbody>
@@ -92,6 +86,7 @@
             return parseFloat(str) || 0;
         }
 
+        // একদম স্পেসিফিক কলাম খোঁজার স্মার্ট লজিক
         function findCol(row, keywords) {
             const keys = Object.keys(row);
             for (let k of keys) {
@@ -100,6 +95,7 @@
                     if (lowK === word.toLowerCase() || lowK === word.toLowerCase() + " (usd)") return k;
                 }
             }
+            // যদি হুবহু না পায় তবে পার্শিয়াল খুঁজবে
             for (let k of keys) {
                 let lowK = k.toLowerCase().trim();
                 for (let word of keywords) {
@@ -112,7 +108,10 @@
         function loadFile(e) {
             Papa.parse(e.target.files[0], {
                 header: true, skipEmptyLines: true,
-                complete: (res) => { adData = res.data; render(); }
+                complete: (res) => { 
+                    adData = res.data; 
+                    render(); 
+                }
             });
         }
 
@@ -120,20 +119,29 @@
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             
+            // সিরিয়াল ধরে ডাটা লুপ করা
             adData.forEach((row, i) => {
                 const c_name = row[findCol(row, ['campaign name', 'campaign'])] || "N/A";
-                const c_delivery = row[findCol(row, ['delivery', 'status'])] || "Active";
-                const spend = cleanNum(row[findCol(row, ['amount spent', 'spend'])]);
-                const results = cleanNum(row[findCol(row, ['results', 'purchase', 'website purchases'])]);
-                
+                const c_spend = row[findCol(row, ['amount spent', 'spend'])] || 0;
+                const c_res = row[findCol(row, ['results', 'purchase', 'website purchases'])] || 0;
+
+                const spend = cleanNum(c_spend);
+                const results = cleanNum(c_res);
+
+                // গুরুত্বপূর্ণ: যদি নাম, স্পেন্ড বা রেজাল্ট এর যেকোনো একটি থাকে তবেই দেখাবে
                 if (!c_name || (spend === 0 && results === 0)) return;
 
                 const tr = document.createElement('tr');
-                if (c_delivery !== 'Active') tr.classList.add('inactive-row');
-                
                 tr.innerHTML = `
-                    <td>${c_delivery}</td>
+                    <td style="color:#8b949e">${i+1}</td>
                     <td style="color:#fff; font-weight:bold">${c_name}</td>
+                    <td>
+                        <select onchange="handleTypeChange(this, ${results})">
+                            <option value="SALE">SALE</option>
+                            <option value="MSG">MSG</option>
+                        </select>
+                    </td>
+                    <td>${row[findCol(row, ['budget'])] || '—'}</td>
                     <td>${cleanNum(row[findCol(row, ['reach'])]).toLocaleString()}</td>
                     <td>${cleanNum(row[findCol(row, ['impressions'])]).toLocaleString()}</td>
                     <td>${cleanNum(row[findCol(row, ['frequency'])]).toFixed(2)}</td>
@@ -141,40 +149,38 @@
                     <td>${cleanNum(row[findCol(row, ['link clicks', 'clicks'])])}</td>
                     <td>${cleanNum(row[findCol(row, ['ctr'])]).toFixed(2)}%</td>
                     <td>${cleanNum(row[findCol(row, ['landing page', 'lpv'])])}</td>
-                    <td>${results}</td>
+                    <td style="color:#fff">${results}</td>
                     <td class="row-spend">$${spend.toFixed(2)}</td>
                     <td>$${cleanNum(row[findCol(row, ['cost per result', 'cpr'])]).toFixed(2)}</td>
                     <td>${cleanNum(row[findCol(row, ['roas'])]).toFixed(2)}</td>
                     <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
                     <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
                     <td><input type="number" value="${results}" class="m-orders" oninput="updateAll()"></td>
-                    <td class="row-rev">৳0</td>
                     <td class="row-profit">৳0</td>
                 `;
                 tbody.appendChild(tr);
             });
-            document.getElementById('status').innerText = "All metrics synced successfully!";
+            document.getElementById('status').innerText = "Sync Complete. Sequence Verified.";
             updateAll();
         }
 
-        function toggleInactive() {
-            const filterOn = document.getElementById('filterActive').checked;
-            const rows = document.querySelectorAll('#tableBody tr');
-            rows.forEach(row => {
-                const status = row.cells[0].innerText.toLowerCase();
-                if (filterOn && status !== 'active') {
-                    row.classList.add('hidden');
-                } else {
-                    row.classList.remove('hidden');
-                }
-            });
+        function handleTypeChange(select, originalResults) {
+            const row = select.parentElement.parentElement;
+            const orderInput = row.querySelector('.m-orders');
+            if (select.value === "MSG") {
+                orderInput.value = 0; // মেসেজ হলে ম্যানুয়ালি বসাতে হবে
+                orderInput.style.borderColor = "var(--orange)";
+            } else {
+                orderInput.value = originalResults;
+                orderInput.style.borderColor = "var(--border)";
+            }
             updateAll();
         }
 
         function updateAll() {
             const rate = parseFloat(document.getElementById('exRate').value) || 0;
             let totalSpendUSD = 0, totalRevBDT = 0, totalProfitBDT = 0;
-            const rows = document.querySelectorAll('#tableBody tr:not(.hidden)');
+            const rows = document.querySelectorAll('#tableBody tr');
 
             rows.forEach((tr) => {
                 const spendUSD = parseFloat(tr.querySelector('.row-spend').innerText.replace('$', '')) || 0;
@@ -186,7 +192,6 @@
                 const spendBDT = spendUSD * rate;
                 const profit = revenue - (spendBDT + (cost * orders));
 
-                tr.querySelector('.row-rev').innerText = '৳' + Math.round(revenue).toLocaleString();
                 const pCell = tr.querySelector('.row-profit');
                 pCell.innerText = '৳' + Math.round(profit).toLocaleString();
                 pCell.className = 'row-profit ' + (profit >= 0 ? 'profit' : 'loss');
@@ -200,8 +205,6 @@
             document.getElementById('kpi-spend-bdt').innerText = '৳' + Math.round(totalSpendUSD * rate).toLocaleString();
             document.getElementById('kpi-rev').innerText = '৳' + Math.round(totalRevBDT).toLocaleString();
             document.getElementById('kpi-profit').innerText = '৳' + Math.round(totalProfitBDT).toLocaleString();
-            const avgRoas = totalSpendUSD > 0 ? (totalRevBDT / (totalSpendUSD * rate)) : 0;
-            document.getElementById('kpi-roas').innerText = avgRoas.toFixed(2);
             document.getElementById('profit-card').style.borderColor = totalProfitBDT >= 0 ? 'var(--green)' : 'var(--red)';
         }
     </script>
