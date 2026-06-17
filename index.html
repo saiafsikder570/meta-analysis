@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meta Ads Master Pro | Sales vs MSG Accuracy</title>
+    <title>Meta Ads Master Pro | Persistance Edition</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         :root { --bg: #0d1117; --card: #161b22; --border: #30363d; --text: #c9d1d9; --blue: #58a6ff; --green: #3fb950; --orange: #d29922; --red: #f85149; }
@@ -19,10 +19,12 @@
         th, td { padding: 8px; text-align: left; border-bottom: 1px solid var(--border); border-right: 1px dotted #333; white-space: nowrap; }
         th { background: #21262d; color: #8b949e; position: sticky; top: 0; z-index: 10; }
         tfoot td { background: #1c2128; font-weight: bold; color: #fff; border-top: 2px solid var(--blue); }
-        input, select { background: #0d1117; border: 1px solid var(--border); color: white; padding: 3px; border-radius: 3px; outline: none; font-size: 11px; }
+        input, select { background: #0d1117; border: 1px solid var(--border); color: white; padding: 3px; border-radius: 3px; outline: none; font-size: 11px; width: 90%; }
+        .editable-name { width: 250px; font-weight: bold; color: var(--blue); }
         .profit { color: var(--green); }
         .loss { color: var(--red); }
-        .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-left: 5px;}
+        .btn-red { background: var(--red); }
         .res-split { font-size: 10px; line-height: 1.2; }
     </style>
 </head>
@@ -30,7 +32,7 @@
 
     <div class="header">
         <div style="flex:1">
-            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer <small style="font-size: 10px; color: var(--orange);">v5.1 - MSG/Sales Split</small></h2>
+            <h2 style="margin:0; color: white;">Meta Ads Pro Analyzer <small style="font-size: 10px; color: var(--orange);">v6.0 - Persistent Storage</small></h2>
         </div>
         <div class="setting-box">
             <span>$1 = </span>
@@ -38,7 +40,8 @@
             <span>BDT</span>
         </div>
         <input type="file" id="fileInp" accept=".csv" hidden onchange="loadFile(event)">
-        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload Facebook CSV</button>
+        <button class="btn" onclick="document.getElementById('fileInp').click()">Upload CSV</button>
+        <button class="btn btn-red" onclick="clearAllData()">Clear All Saved Data</button>
     </div>
 
     <div class="kpi-grid">
@@ -53,7 +56,7 @@
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Campaign Name</th>
+                    <th>Campaign Name (Editable)</th>
                     <th>Type</th>
                     <th>Budget</th>
                     <th>Reach</th>
@@ -101,6 +104,7 @@
 
     <script>
         let adData = [];
+        let storageKey = "fb_ads_dashboard_cache";
 
         function cleanNum(val) {
             if (val === undefined || val === null || val === "" || val === "—") return 0;
@@ -132,28 +136,51 @@
             });
         }
 
+        function getCache() {
+            let data = localStorage.getItem(storageKey);
+            return data ? JSON.parse(data) : {};
+        }
+
+        function saveCache(id, field, value) {
+            let cache = getCache();
+            if (!cache[id]) cache[id] = {};
+            cache[id][field] = value;
+            localStorage.setItem(storageKey, JSON.stringify(cache));
+        }
+
+        function clearAllData() {
+            if(confirm("Are you sure? This will delete all saved Costs, Prices, and Custom Names.")) {
+                localStorage.removeItem(storageKey);
+                render();
+            }
+        }
+
         function render() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
+            const cache = getCache();
             
             adData.forEach((row, i) => {
-                const c_name = row[findCol(row, ['campaign name', 'campaign'])] || "N/A";
-                const c_spend = row[findCol(row, ['amount spent', 'spend'])] || 0;
-                const c_res = row[findCol(row, ['results', 'purchase', 'website purchases', 'messaging conversations started'])] || 0;
+                const originalName = row[findCol(row, ['campaign name', 'campaign'])] || `camp_${i}`;
+                const spend = cleanNum(row[findCol(row, ['amount spent', 'spend'])]);
+                const results = cleanNum(row[findCol(row, ['results', 'purchase', 'website purchases', 'messaging conversations started'])]);
 
-                const spend = cleanNum(c_spend);
-                const results = cleanNum(c_res);
+                if (!originalName || (spend === 0 && results === 0)) return;
 
-                if (!c_name || (spend === 0 && results === 0)) return;
-
-                // Auto detection based on name
-                let isMessage = c_name.toLowerCase().includes('msg') || c_name.toLowerCase().includes('message') || c_name.toLowerCase().includes('chat');
-                let defaultOrders = isMessage ? 0 : results;
+                // Load from cache or set defaults
+                let saved = cache[originalName] || {};
+                let isMessage = saved.type ? (saved.type === "MSG") : (originalName.toLowerCase().includes('msg') || originalName.toLowerCase().includes('message'));
+                
+                let displayName = saved.customName || originalName;
+                let cost = saved.cost !== undefined ? saved.cost : 500;
+                let price = saved.price !== undefined ? saved.price : 1200;
+                let orders = saved.orders !== undefined ? saved.orders : (isMessage ? 0 : results);
 
                 const tr = document.createElement('tr');
+                tr.setAttribute('data-original-name', originalName);
                 tr.innerHTML = `
                     <td style="color:#8b949e">${i+1}</td>
-                    <td style="color:#fff; font-weight:bold">${c_name}</td>
+                    <td><input type="text" class="editable-name" value="${displayName}" oninput="saveCache('${originalName}', 'customName', this.value)"></td>
                     <td>
                         <select class="type-select" onchange="handleTypeChange(this, ${results})">
                             <option value="SALE" ${!isMessage ? 'selected' : ''}>SALE</option>
@@ -172,9 +199,9 @@
                     <td class="row-spend">$${spend.toFixed(2)}</td>
                     <td class="cell-cpr">${cleanNum(row[findCol(row, ['cost per result', 'cpr'])])}</td>
                     <td class="cell-roas">${cleanNum(row[findCol(row, ['roas'])])}</td>
-                    <td><input type="number" value="500" class="m-cost" oninput="updateAll()"></td>
-                    <td><input type="number" value="1200" class="m-price" oninput="updateAll()"></td>
-                    <td><input type="number" value="${defaultOrders}" class="m-orders" style="border:1px solid ${isMessage ? 'var(--orange)' : 'transparent'}" oninput="updateAll()"></td>
+                    <td><input type="number" value="${cost}" class="m-cost" oninput="saveCache('${originalName}', 'cost', this.value); updateAll()"></td>
+                    <td><input type="number" value="${price}" class="m-price" oninput="saveCache('${originalName}', 'price', this.value); updateAll()"></td>
+                    <td><input type="number" value="${orders}" class="m-orders" style="border:1px solid ${isMessage ? 'var(--orange)' : 'transparent'}" oninput="saveCache('${originalName}', 'orders', this.value); updateAll()"></td>
                     <td class="row-profit">৳0</td>
                 `;
                 tbody.appendChild(tr);
@@ -184,14 +211,15 @@
 
         function handleTypeChange(select, originalResults) {
             const row = select.parentElement.parentElement;
+            const originalName = row.getAttribute('data-original-name');
             const orderInput = row.querySelector('.m-orders');
             const resCell = row.querySelector('.cell-res');
             
-            // Update Icon
+            saveCache(originalName, 'type', select.value);
             resCell.innerHTML = `${originalResults} ${select.value === "MSG" ? '💬' : '🛒'}`;
             
-            // Set default orders (Sales = result count, MSG = 0)
             orderInput.value = (select.value === "MSG") ? 0 : originalResults;
+            saveCache(originalName, 'orders', orderInput.value);
             orderInput.style.borderColor = (select.value === "MSG") ? "var(--orange)" : "transparent";
             updateAll();
         }
@@ -226,12 +254,10 @@
                 tSpendUSD += spendUSD; tOrders += orders; 
                 tRevBDT += revenue; tProfitBDT += profit;
 
-                // Split result counts based on campaign type
                 if (type === "SALE") totalPurchases += resValue;
                 else totalMessages += resValue;
             });
 
-            // Update Footer (Summary)
             document.getElementById('tot-reach').innerText = tReach.toLocaleString();
             document.getElementById('tot-imp').innerText = tImp.toLocaleString();
             document.getElementById('avg-freq').innerText = (tReach > 0 ? (tImp / tReach).toFixed(2) : '0.00');
@@ -239,18 +265,13 @@
             document.getElementById('tot-clicks').innerText = tClicks.toLocaleString();
             document.getElementById('avg-ctr').innerText = (tImp > 0 ? ((tClicks / tImp) * 100).toFixed(2) : '0.00') + '%';
             document.getElementById('tot-lpv').innerText = tLPV.toLocaleString();
-            
-            // Specific split summary
             document.getElementById('split-sales').innerText = `🛒 Purchases: ${totalPurchases}`;
             document.getElementById('split-msgs').innerText = `💬 Messages: ${totalMessages}`;
-
             document.getElementById('tot-spend').innerText = '$' + tSpendUSD.toFixed(2);
             document.getElementById('avg-roas').innerText = (tSpendUSD > 0 ? (tRevBDT / (tSpendUSD * rate)).toFixed(2) : '0.00');
             document.getElementById('tot-orders').innerText = tOrders.toLocaleString(); 
             document.getElementById('tot-profit').innerText = '৳' + Math.round(tProfitBDT).toLocaleString();
             document.getElementById('tot-profit').className = tProfitBDT >= 0 ? 'profit' : 'loss';
-
-            // Update Top KPI Cards
             document.getElementById('kpi-spend').innerText = '$' + tSpendUSD.toFixed(2);
             document.getElementById('kpi-spend-bdt').innerText = '৳' + Math.round(tSpendUSD * rate).toLocaleString();
             document.getElementById('kpi-rev').innerText = '৳' + Math.round(tRevBDT).toLocaleString();
